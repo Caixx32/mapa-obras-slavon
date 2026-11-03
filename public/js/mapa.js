@@ -24,7 +24,7 @@ function iconoCluster(cluster) {
 
 /** @param opciones { tiles, atribucion, alSeleccionar(obra), alDeseleccionar() } */
 export function crearMapa(contenedor, opciones) {
-  // Para que el mapa no «atrape» el scroll de la página: la rueda baja la página (zoom = Ctrl + rueda) y, en celulares,
+  // Para que el mapa no «atrape» el scroll de la página: la rueda baja la página hasta hacer clic en el mapa (zoom = rueda tras el clic) y, en celulares,
   // un dedo desplaza la página y se usan dos dedos para mover/acercar el mapa.
   const tactil = matchMedia('(hover: none) and (pointer: coarse)').matches;
   const map = L.map(contenedor, { zoomControl: false, attributionControl: false, minZoom: 3, maxZoom: 19, zoomSnap: 0.5, zoomDelta: 1, scrollWheelZoom: false, dragging: !tactil }).setView(ARGENTINA, 4.5);
@@ -51,18 +51,28 @@ export function crearMapa(contenedor, opciones) {
   if (tactil) {
     contenedor.addEventListener('touchmove', (e) => { if (e.touches.length === 1) avisar('Usá dos dedos para mover el mapa'); }, { passive: true });
   } else {
+    // Rueda del mouse: baja la página hasta que se hace clic en el mapa; entonces hace zoom hasta que el mouse sale del mapa.
+    let activo = false;
+    let avisado = false;
+    const activar = () => { if (!activo) { activo = true; map.scrollWheelZoom.enable(); } };
+    const desactivar = () => { activo = false; avisado = false; map.scrollWheelZoom.disable(); };
+    contenedor.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') activar(); });
+    contenedor.addEventListener('mouseleave', desactivar);
     let acumulado = 0;
     contenedor.addEventListener('wheel', (e) => {
-      if (!(e.ctrlKey || e.metaKey)) {
-        avisar('Usá Ctrl + rueda del mouse para acercar o alejar el mapa');
-        return;                                   // sin Ctrl: la página sigue su scroll normal
+      if (e.ctrlKey || e.metaKey) {               // pellizco del trackpad (o Ctrl + rueda): zoom siempre
+        e.preventDefault();
+        acumulado += -e.deltaY / (e.deltaMode === 1 ? 4 : 80);
+        if (Math.abs(acumulado) >= 0.5) {
+          const paso = Math.sign(acumulado) * Math.min(1.5, Math.round(Math.abs(acumulado) * 2) / 2);
+          acumulado = 0;
+          map.setZoomAround(map.mouseEventToContainerPoint(e), map.getZoom() + paso);
+        }
+        return;
       }
-      e.preventDefault();                         // con Ctrl (o pellizco en el trackpad): zoom del mapa, no de la página
-      acumulado += -e.deltaY / (e.deltaMode === 1 ? 4 : 80);
-      if (Math.abs(acumulado) >= 0.5) {
-        const paso = Math.sign(acumulado) * Math.min(1.5, Math.round(Math.abs(acumulado) * 2) / 2);
-        acumulado = 0;
-        map.setZoomAround(map.mouseEventToContainerPoint(e), map.getZoom() + paso);
+      if (!activo && !avisado) {                  // sin activar: la página sigue su scroll normal
+        avisado = true;
+        avisar('Hacé clic en el mapa para acercar con la rueda del mouse');
       }
     }, { passive: false });
   }
