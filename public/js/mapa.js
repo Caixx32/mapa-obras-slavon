@@ -24,7 +24,10 @@ function iconoCluster(cluster) {
 
 /** @param opciones { tiles, atribucion, alSeleccionar(obra), alDeseleccionar() } */
 export function crearMapa(contenedor, opciones) {
-  const map = L.map(contenedor, { zoomControl: false, attributionControl: false, minZoom: 3, maxZoom: 19, zoomSnap: 0.5, zoomDelta: 1 }).setView(ARGENTINA, 4.5);
+  // Para que el mapa no «atrape» el scroll de la página: la rueda baja la página (zoom = Ctrl + rueda) y, en celulares,
+  // un dedo desplaza la página y se usan dos dedos para mover/acercar el mapa.
+  const tactil = matchMedia('(hover: none) and (pointer: coarse)').matches;
+  const map = L.map(contenedor, { zoomControl: false, attributionControl: false, minZoom: 3, maxZoom: 19, zoomSnap: 0.5, zoomDelta: 1, scrollWheelZoom: false, dragging: !tactil }).setView(ARGENTINA, 4.5);
   L.control.zoom({ position: 'topright', zoomInTitle: 'Acercar', zoomOutTitle: 'Alejar' }).addTo(map);
   L.control.attribution({ prefix: false, position: 'bottomleft' }).addAttribution(opciones.atribucion).addTo(map);
   const base = L.tileLayer(opciones.tiles, { subdomains: opciones.subdominios || 'abc', maxZoom: 19, maxNativeZoom: opciones.zoomNativoMaximo || 19, detectRetina: false }).addTo(map);
@@ -33,6 +36,36 @@ export function crearMapa(contenedor, opciones) {
   let tilesError = 0;
   base.on('tileload', () => { tilesOk++; });
   base.on('tileerror', () => { tilesError++; if (tilesError >= 6 && tilesOk === 0) opciones.alFallarMapaBase?.(); });
+
+  const aviso = document.createElement('p');
+  aviso.className = 'aviso-gestos';
+  aviso.setAttribute('role', 'status');
+  contenedor.parentElement.append(aviso);
+  let ocultarAviso;
+  const avisar = (texto) => {
+    aviso.textContent = texto;
+    aviso.classList.add('visible');
+    clearTimeout(ocultarAviso);
+    ocultarAviso = setTimeout(() => aviso.classList.remove('visible'), 1600);
+  };
+  if (tactil) {
+    contenedor.addEventListener('touchmove', (e) => { if (e.touches.length === 1) avisar('Usá dos dedos para mover el mapa'); }, { passive: true });
+  } else {
+    let acumulado = 0;
+    contenedor.addEventListener('wheel', (e) => {
+      if (!(e.ctrlKey || e.metaKey)) {
+        avisar('Usá Ctrl + rueda del mouse para acercar o alejar el mapa');
+        return;                                   // sin Ctrl: la página sigue su scroll normal
+      }
+      e.preventDefault();                         // con Ctrl (o pellizco en el trackpad): zoom del mapa, no de la página
+      acumulado += -e.deltaY / (e.deltaMode === 1 ? 4 : 80);
+      if (Math.abs(acumulado) >= 0.5) {
+        const paso = Math.sign(acumulado) * Math.min(1.5, Math.round(Math.abs(acumulado) * 2) / 2);
+        acumulado = 0;
+        map.setZoomAround(map.mouseEventToContainerPoint(e), map.getZoom() + paso);
+      }
+    }, { passive: false });
+  }
 
   const grupo = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 46, spiderfyOnMaxZoom: true, chunkedLoading: true, iconCreateFunction: iconoCluster }).addTo(map);
   const marcadores = new Map(); // id → marker

@@ -60,8 +60,21 @@ La hoja `LEEME` de la propia planilla explica cada columna. Las que completás v
 | `deporte` | `padel` (cancha completa) · `cesped_padel` (solo el césped) · `futbol` · `hockey` · `tenis` · `residencial` · `otro` |
 | `video_url` | Opcional. Tiene que empezar con `https://`. |
 
-Para agregar una obra: fila nueva al final con un `id` nuevo (el siguiente número libre). **Los `id` no se cambian ni se reutilizan**:
-las carpetas de fotos se nombran con ese número.
+### Agregar una obra nueva
+
+Fila nueva al final de la hoja **OBRAS**, con un `id` nuevo (el siguiente número libre: si la última es la 1236, la nueva es la 1237).
+**Los `id` no se cambian ni se reutilizan**: las carpetas de fotos se nombran con ese número.
+
+Lo mínimo para que aparezca: `id`, `deporte`, `provincia` y `ciudad`. El resto es opcional y mejora la tarjeta:
+`cantidad_canchas` (si queda vacío cuenta 1), `anio`, `estado` (`terminada` / `en_obra`), `tipo` (ej. «Cancha completa modelo Panoramic»),
+`descripcion_corta` y `nombre_club`. Las coordenadas (`lat` y `lng`) también son opcionales: si faltan, `build-data` ubica la obra por
+ciudad + provincia (queda marcada `aprox` en `reportes/coordenadas-aprox.xlsx`); si querés el punto exacto, copiá la latitud y longitud.
+
+### Mostrar el nombre del club
+
+Por defecto todas las obras se ven como «Complejo de fútbol – Ciudad, Provincia». Para mostrar el nombre real de un club:
+completá `nombre_club` y poné `nombrable = si` (con el permiso del cliente). Con `nombrable = si` también se muestra la ubicación exacta.
+En Excel conviene filtrar la columna `falta_nombre_club = no` para ver cuáles ya tienen nombre cargado.
 
 ## Cargar fotos
 

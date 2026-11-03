@@ -29,7 +29,12 @@
 .contador .rotulo { margin: 10px 0 0; font-size: 0.78rem; font-weight: 700; line-height: 1.3; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-texto-secundario); }
 
 /* ---------------------------------------------------------------- 3. mapa (altura casi completa) */
-.landing .mapa-seccion { height: min(88vh, 860px); height: min(88dvh, 860px); min-height: 540px; }
+.landing .mapa-seccion { height: min(80vh, 780px); height: min(80dvh, 780px); min-height: 520px; }
+.mapa-banda { background: var(--color-carbon); }
+@media (min-width: 900px) {   /* escritorio: recuadro con márgenes, para que siempre haya por dónde bajar la página */
+  .mapa-banda { padding: 0 32px 56px; }
+  .landing .mapa-seccion { width: min(1240px, 100%); margin: 0 auto; border-radius: 18px; box-shadow: 0 14px 44px rgba(0, 0, 0, 0.35); }
+}
 
 /* ---------------------------------------------------------------- 4. obras destacadas */
 .destacadas { padding: clamp(56px, 9vw, 96px) 0; background: var(--color-fondo-claro); }
