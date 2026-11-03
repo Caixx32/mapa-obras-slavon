@@ -24,7 +24,7 @@
 
 /* ---------------------------------------------------------------- 2. contadores */
 .contadores { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 16px; margin-top: clamp(46px, 8vw, 76px); padding-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.16); }
-@media (min-width: 760px) { .contadores { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 24px; } }
+@media (min-width: 760px) { .contadores { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 24px 30px; } .contador .cifra { font-size: clamp(2.2rem, 4.2vw, 3.1rem); } }
 @media (max-width: 759px) { .contador:last-child:nth-child(odd) { grid-column: 1 / -1; } }
 .contadores-nota { max-width: 62ch; margin: 22px 0 0; font-size: 0.76rem; line-height: 1.5; color: var(--color-texto-secundario); opacity: 0.85; }
 .contadores-nota:empty { display: none; }
@@ -98,3 +98,29 @@ body.landing.hero-fuera .wa-flotante { opacity: 1; pointer-events: auto; transfo
   body.landing.hero-fuera.tarjeta-abierta .wa-flotante, body.tarjeta-abierta .wa-flotante { opacity: 0; pointer-events: none; transform: scale(0.9); }   /* la tarjeta ya trae su propio botón */
 }
 @media (max-width: 560px) { .hero-acciones .btn { flex: 1 1 100%; } }
+
+/* ---------------------------------------------------------------- 2b. «Confiaron en nosotros» */
+.confiaron { padding: 26px 0 28px; background: var(--color-carbon-profundo, #1A1F22); color: var(--color-texto-secundario); border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.confiaron .tag { margin: 0 0 14px; color: var(--color-primario); }
+.confiaron-ventana { overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent); }
+.confiaron-pista { display: flex; width: max-content; animation: slv-marquesina 48s linear infinite; }
+.confiaron-lista { display: flex; flex: none; margin: 0; padding: 0; list-style: none; font-size: 1rem; font-weight: 700; color: var(--color-texto-secundario); }
+.confiaron-lista li { display: flex; align-items: center; margin-right: 22px; white-space: nowrap; }
+.confiaron-lista li::after { content: '·'; margin-left: 22px; color: var(--color-primario); }
+@keyframes slv-marquesina { to { transform: translateX(-50%); } }
+.confiaron-pista:hover { animation-play-state: paused; }
+@media (min-width: 900px) {
+  .confiaron-ventana { overflow: visible; -webkit-mask-image: none; mask-image: none; }
+  .confiaron .tag, .confiaron-pista { width: min(1160px, 100% - 64px); margin-inline: auto; }
+  .confiaron-pista { animation: none; justify-content: flex-start; }
+  .confiaron-lista { flex: 0 1 auto; flex-wrap: wrap; row-gap: 8px; font-size: 0.94rem; }
+  .confiaron-lista li { margin-right: 14px; }
+  .confiaron-lista li::after { margin-left: 14px; }
+  .confiaron-lista[aria-hidden='true'] { display: none; }
+  .confiaron-lista li:last-child::after { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confiaron-pista { animation: none; }
+  .confiaron-ventana { overflow-x: auto; -webkit-mask-image: none; mask-image: none; }
+  .confiaron-lista[aria-hidden='true'] { display: none; }
+}

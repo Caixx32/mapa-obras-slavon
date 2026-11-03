@@ -62,6 +62,14 @@
   </header>
 
   <main>
+    <!-- 2b. CONFIARON EN NOSOTROS (nombres en texto; se completa desde config.json) -->
+    <section class="confiaron" id="confiaron" aria-labelledby="confiaron-titulo" hidden>
+      <div class="contenedor">
+        <p class="tag" id="confiaron-titulo">Confiaron en nosotros</p>
+      </div>
+      <div class="confiaron-ventana"><div class="confiaron-pista" id="confiaron-pista"></div></div>
+    </section>
+
     <!-- 3. MAPA -->
     <div class="mapa-banda">
     <section class="mapa-seccion" id="mapa-obras" aria-label="Mapa de obras">
@@ -70,6 +78,10 @@
         <select id="provincia" class="select-provincia" aria-label="Provincia"></select>
       </div>
       <div class="acciones-mapa" id="acciones-mapa">
+        <div class="vistas" id="vistas" role="group" aria-label="Ir a un país" hidden>
+          <button type="button" class="btn-accion" data-pais="Argentina"><svg class="bandera" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#74ACDF"/><rect y="4.67" width="20" height="4.66" fill="#fff"/><circle cx="10" cy="7" r="1.5" fill="#F6B40E"/></svg><span>Argentina</span></button>
+          <button type="button" class="btn-accion" data-pais="España"><svg class="bandera" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#AA151B"/><rect y="3.5" width="20" height="7" fill="#F1BF00"/></svg><span>Obras en España</span></button>
+        </div>
         <button type="button" class="btn-accion" id="btn-cerca" aria-label="Ver obras cerca tuyo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span>Cerca tuyo</span></button>
         <div class="compartir">
           <button type="button" class="btn-accion" id="btn-compartir" aria-haspopup="true" aria-expanded="false" aria-controls="compartir-menu" aria-label="Compartir esta vista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16a3 3 0 0 0-2.2 1l-6.9-3.9a3 3 0 0 0 0-2.2L15.8 7A3 3 0 1 0 15 5a3 3 0 0 0 .1.7L8.2 9.6a3 3 0 1 0 0 4.8l6.9 3.9A3 3 0 1 0 18 16z"/></svg><span>Compartir<span class="solo-escritorio"> esta vista</span></span></button>

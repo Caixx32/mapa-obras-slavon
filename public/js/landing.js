@@ -54,6 +54,7 @@ function contadores(config, meta) {
     ['cesped', meta.canchas_cesped, 'canchas de césped'],
     ['provincias', meta.provincias, 'provincias alcanzadas'],
   ];
+  if (meta.paises?.length > 1) items.push(['paises', meta.paises.length, 'países']);
   if (meta.obras_en_obra > 0) items.push(['en_marcha', meta.obras_en_obra, 'obras en marcha']);
   cont.replaceChildren(...items.map(([clave, valor, porDefecto]) => {
     const d = el('div', 'contador');
@@ -65,6 +66,24 @@ function contadores(config, meta) {
   animarContadores(cont);
   const nota = $('contadores-nota');
   if (nota) nota.textContent = textos.nota ?? 'Las cifras cuentan canchas. En el mapa cada punto es una obra, y una obra puede tener varias canchas.';
+}
+
+/** Franja «Confiaron en nosotros»: solo nombres en texto. Dos copias de la lista para que en celular corra sin saltos. */
+function confiaron(config) {
+  const sec = $('confiaron');
+  if (!sec) return;
+  const c = config.confiaron ?? {};
+  const nombres = (c.nombres ?? []).map(String).filter(Boolean);
+  if (!nombres.length) { sec.hidden = true; return; }
+  if (c.etiqueta) $('confiaron-titulo').textContent = c.etiqueta;
+  const lista = (copia) => {
+    const ul = el('ul', 'confiaron-lista');
+    if (copia) ul.setAttribute('aria-hidden', 'true');
+    nombres.forEach((n) => ul.append(el('li', '', n)));
+    return ul;
+  };
+  $('confiaron-pista').replaceChildren(lista(false), lista(true));
+  sec.hidden = false;
 }
 
 function tarjetaDestacada(o, config, verEnMapa) {
@@ -166,6 +185,7 @@ export function iniciarLanding({ config, datos, verEnMapa }) {
   if (h.boton) $('hero-wa-texto').textContent = h.boton;
   if (h.boton_mapa) $('hero-mapa').textContent = h.boton_mapa;
   contadores(config, datos.meta);
+  confiaron(config);
   destacadas(config, datos.obras, verEnMapa);
   cierre(config);
   enlaces(config);

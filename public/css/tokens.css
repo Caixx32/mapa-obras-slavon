@@ -9,6 +9,7 @@
   --color-carbon: #22282C;              /* Gris carbón: fondos oscuros y texto principal */
   --color-blanco: #FFFFFF;
   --color-texto-secundario: #C9CDD1;    /* Gris de texto secundario sobre fondo oscuro */
+  --color-carbon-profundo: #1A1F22;     /* Carbón más oscuro: franjas pegadas al encabezado */
 
   /* --- Apoyo (neutros para el mapa y las tarjetas) --- */
   --color-fondo-claro: #F3F4F5;

@@ -149,3 +149,10 @@ export function obrasCerca(obras, punto, radioKm = 50) {
 }
 
 export const sumarCanchas = (obras) => obras.reduce((a, o) => a + (o.cantidad_canchas || 1), 0);
+
+/** Obras con las que se encuadra el mapa: las de Argentina si hay (el mapa arranca centrado en Argentina); si no, las que haya. */
+export function obrasParaEncuadrar(obras) {
+  const ubicadas = obras.filter(tieneUbicacion);
+  const argentina = ubicadas.filter((o) => (o.pais || 'Argentina') === 'Argentina');
+  return argentina.length ? argentina : ubicadas;
+}

@@ -167,3 +167,25 @@ test('pipeline: corrige errores de tipeo de ciudades', () => {
   assert.deepEqual(corregirCiudad('dpto. Avellaneda', 'Santiago del Estero'), { ciudad: 'Avellaneda', provincia: 'Santiago del Estero' });
   assert.equal(corregirCiudad('Rosario', 'Santa Fe'), null);
 });
+
+import { obrasParaEncuadrar } from '../public/js/logica.js';
+test('mapa: arranca centrado en Argentina aunque haya obras en España', () => {
+  const ar = { id: '1', pais: 'Argentina', lat: -34.6, lng: -58.4 };
+  const es = { id: '2', pais: 'España', lat: 39.5, lng: 2.7 };
+  assert.deepEqual(obrasParaEncuadrar([ar, es]).map((o) => o.id), ['1']);
+  assert.deepEqual(obrasParaEncuadrar([es]).map((o) => o.id), ['2'], 'si solo hay obras en España (filtro por provincia), se encuadran esas');
+  assert.deepEqual(obrasParaEncuadrar([{ id: '3', pais: 'Argentina', lat: null, lng: null }, es]).map((o) => o.id), ['2']);
+});
+
+test('provincias: se agrupan por país', () => {
+  const g = agruparProvincias([
+    { pais: 'Argentina', provincia: 'Córdoba', lat: -31, lng: -64 },
+    { pais: 'España', provincia: 'Islas Baleares', lat: 39.5, lng: 2.7 },
+  ]);
+  assert.deepEqual(g.map((x) => x.pais), ['Argentina', 'España']);
+  assert.equal(g[1].provincias[0].valor, 'España|Islas Baleares');
+});
+
+test('titular: sale solo de los datos («Argentina y España»)', () => {
+  assert.equal(titular('Más de {N} canchas construidas en {paises}', { titular_n: 1300, paises: ['Argentina', 'España'] }), 'Más de 1.300 canchas construidas en Argentina y España');
+});
