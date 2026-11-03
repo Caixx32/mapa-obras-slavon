@@ -154,6 +154,21 @@ La imagen se arma desde `scripts/og/og.html` (abrirla en el navegador a 1200×63
 Leaflet, Leaflet.markercluster y Montserrat están copiadas en `public/vendor/` y `public/fonts/` (no se usan CDNs).
 Si algún día se actualizan: `npm install` y `npm run vendor`.
 
+## Publicar
+
+La web se publica en **GitHub Pages** desde la carpeta `public/` (nada más). El flujo está en `.github/workflows/pages.yml`: cada vez que se une
+algo a `main`, se publica solo. Antes de publicar revisa que no haya dentro de `public/` planillas, KML, fotos `_privada` ni datos internos; si los hay, frena.
+
+**La primera vez** hay que activar Pages en GitHub (un clic): *Settings → Pages → Build and deployment → Source: GitHub Actions*.
+
+Para actualizar el sitio: `npm run build-data`, subir los cambios de `public/` y unirlos a `main`.
+
+**Modo borrador:** mientras `public/index.html` tenga la línea `<meta name="robots" content="noindex, nofollow">` y exista `public/robots.txt`, los buscadores
+(Google) no muestran la página; el link funciona igual para quien lo tenga. Para la versión oficial, borrar esa línea y ese archivo.
+
+**Dirección propia** (por ejemplo `mapa.slavon.com.ar`): quien maneja el dominio crea un registro CNAME del subdominio hacia `caixx32.github.io`;
+después se escribe la dirección en *Settings → Pages → Custom domain* y se activa *Enforce HTTPS*. Hay que actualizar `og:url`, `og:image` y `canonical` en `public/index.html`.
+
 ## Tests
 
 ```bash

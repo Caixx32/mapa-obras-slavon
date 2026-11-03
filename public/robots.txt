@@ -1,0 +1,3 @@
+# BORRADOR: que los buscadores no lo recorran. Al publicar la version oficial, borrar este archivo.
+User-agent: *
+Disallow: /
