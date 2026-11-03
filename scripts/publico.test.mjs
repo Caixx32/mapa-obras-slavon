@@ -102,3 +102,20 @@ test('nombre genérico por deporte', () => {
   assert.equal(nombreGenerico({ deporte: 'cesped_padel', ciudad: null, provincia: 'CABA' }), 'Complejo de pádel – CABA');
   assert.equal(nombreGenerico({ deporte: 'residencial', ciudad: 'Tigre', provincia: 'Buenos Aires' }), 'Espacio residencial – Tigre, Buenos Aires');
 });
+
+test('verificarFugas: el nombre autorizado de un club puede repetir al cliente del mismo club', () => {
+  const o = obra({ nombrable: true, nombre_club: 'Club Sportivo Italiano', cliente_interno: 'Sportivo Italiano' });
+  const { reg } = registroPublico(o);
+  assert.equal(reg.nombre_club, 'Club Sportivo Italiano');
+  assert.doesNotThrow(() => verificarFugas([reg], [o]));
+});
+
+test('verificarFugas: una copia oculta de un club ya publicado no es fuga, pero un club oculto distinto sí', () => {
+  const visible = obra({ id: '0002', nombrable: true, nombre_club: 'Fútbol 5 Los Amigos. Complejo deportivo' });
+  const copiaOculta = obra({ id: '0003', nombrable: false, publicar: false, nombre_club: 'Los Amigos Complejo deportivo' });
+  const { reg } = registroPublico(visible);
+  assert.doesNotThrow(() => verificarFugas([reg], [visible, copiaOculta]));
+  const otroOculto = obra({ id: '0004', nombrable: false, nombre_club: 'Club Secreto Reservado' });
+  const conFuga = { ...reg, tipo: 'Cancha del Club Secreto Reservado' };
+  assert.throws(() => verificarFugas([conFuga], [visible, otroOculto]), /fugas/);
+});
