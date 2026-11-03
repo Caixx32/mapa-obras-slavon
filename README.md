@@ -162,6 +162,24 @@ Las etiquetas Open Graph de `public/index.html` y la imagen `public/img/og.png` 
 La imagen se arma desde `scripts/og/og.html` (abrirla en el navegador a 1200×630 y sacar una captura). Las URLs de `og:url`, `og:image` y
 `canonical` apuntan a `https://caixx32.github.io/mapa-obras-slavon/`: si el sitio termina en otra dirección (por ejemplo un dominio propio), hay que cambiarlas ahí.
 
+## Funciones del mapa
+
+- **Links compartibles.** Los filtros quedan en la dirección: `?deporte=padel&provincia=cordoba` (varios deportes: `?deporte=padel,futbol`). Quien abre ese link baja directo al mapa, ya filtrado y encuadrado. El botón **Compartir esta vista** copia el link o abre WhatsApp con el link.
+- **Cerca tuyo.** Pide la ubicación del visitante, centra el mapa y dice cuántas obras hay a menos de 50 km. La ubicación se usa solo en el navegador (no se guarda ni se envía). Si no da permiso, aparece un desplegable de provincia.
+- **Obras en construcción** (`estado = en_obra`): el pin tiene un anillo que late, la tarjeta dice «En obra ahora» y el encabezado muestra «obras en marcha».
+- **Contadores.** Los números del encabezado cuentan **canchas**; el texto del mapa dice «X obras en el mapa · Y canchas» (una obra puede tener varias canchas). La aclaración sale debajo de los contadores y se cambia en `config.json` → `contadores.nota`.
+- **WhatsApp flotante.** Aparece recién cuando el encabezado salió de pantalla.
+
+### Medición (opcional)
+
+En `public/config.json` están `ga4_id` (Google Analytics 4, empieza con `G-`) y `meta_pixel_id` (Pixel de Meta, solo números). **Vacíos no se carga ningún script externo.** Si los completás se registran: `click_whatsapp` (con deporte y provincia), `filtro_usado`, `compartir` y `cerca_tuyo`. Nunca se envían nombres de clubes, coordenadas ni datos personales. Ojo: al activar Google o Meta conviene avisar el uso de cookies/medición en la web.
+
+### Reportes que genera `npm run build-data` (carpeta `reportes/`, no se sube a GitHub)
+
+- `sin-ubicar.xlsx`: obras sin punto en el mapa y el motivo (falta ciudad, falta provincia, ciudad no encontrada). Completá la ciudad en la planilla y volvé a correr: se ubican solas (consulta solo «ciudad, provincia, país»).
+- `sin-provincia.xlsx`: obras sin provincia (no entran al filtro por provincia).
+- Errores de tipeo conocidos en la ciudad (p. ej. «Caba», «Cuidad Evita») se corrigen al leer; la planilla no se toca. Quedan anotados en `avisos.txt`.
+
 ## Mapa de fondo
 
 Se usa el mapa de **OpenStreetMap** (gratis, sin clave ni registro), a todo color. Si algún día se lo quiere más suave o en gris, se agrega un filtro en `mapa.filtro` de `public/config.json`

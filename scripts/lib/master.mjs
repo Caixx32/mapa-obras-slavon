@@ -27,6 +27,23 @@ export function textoOrNull(v) {
   return x === null ? null : String(x);
 }
 
+// Errores de tipeo frecuentes en la planilla. Se corrigen al leer (la planilla no se modifica) para poder ubicar la obra y mostrar bien la ciudad.
+const CORRECCIONES_CIUDAD = new Map([
+  ['caba', { ciudad: 'Buenos Aires', provincia: 'CABA' }],
+  ['cuidad evita', { ciudad: 'Ciudad Evita' }],
+  ['general rodroiguez', { ciudad: 'General Rodríguez' }],
+  ['tristian suarez', { ciudad: 'Tristán Suárez' }],
+  ['neuquen capital', { ciudad: 'Neuquén' }],
+  ['san luis capital', { ciudad: 'San Luis' }],
+  ['dpto avellaneda', { ciudad: 'Avellaneda' }],
+]);
+
+/** Devuelve { ciudad, provincia } corregidos, o null si no hay nada que corregir. */
+export function corregirCiudad(ciudad, provincia) {
+  const c = CORRECCIONES_CIUDAD.get(norm(ciudad));
+  return c ? { ciudad: c.ciudad ?? ciudad, provincia: c.provincia ?? provincia } : null;
+}
+
 /** «Municipio de Posadas» → «Posadas», «Partido de Almirante Brown» → «Almirante Brown», «Aeropuerto Internacional Ezeiza» → «Ezeiza». */
 export function simplificarCiudad(ciudad) {
   if (!ciudad) return ciudad;
@@ -82,6 +99,13 @@ export function normalizarFila(raw, nFila) {
   }
   const ciudadOriginal = ciudad;
   ciudad = simplificarCiudad(ciudad);
+  let provincia = textoOrNull(raw.provincia);
+  const corr = corregirCiudad(ciudad, provincia);
+  if (corr) {
+    avisos.push(`obra ${id}: se corrigió «${ciudad}${provincia ? ', ' + provincia : ''}» → «${corr.ciudad}, ${corr.provincia}» (error de tipeo)`);
+    ciudad = corr.ciudad;
+    provincia = corr.provincia;
+  }
 
   return {
     avisos,
@@ -91,7 +115,7 @@ export function normalizarFila(raw, nFila) {
       deporte: dep,
       tipo: textoOrNull(raw.tipo),
       cantidad_canchas: canchas,
-      provincia: textoOrNull(raw.provincia),
+      provincia,
       ciudad,
       _ciudad_simplificada: ciudad !== ciudadOriginal ? ciudadOriginal : null,
       pais: textoOrNull(raw.pais) || 'Argentina',

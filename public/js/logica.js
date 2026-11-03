@@ -109,3 +109,43 @@ export const formatoNumero = (n) => new Intl.NumberFormat('es-AR').format(n);
 export function titular(plantilla, meta) {
   return plantilla.replace('{N}', formatoNumero(meta.titular_n)).replace('{paises}', textoPaises(meta.paises));
 }
+
+// ---------------------------------------------------------------- links compartibles (?deporte=padel&provincia=cordoba)
+export const slugProvincia = (s) => normalizarTexto(s).replaceAll(' ', '-');
+
+/** Filtros ← parámetros de la URL. Ignora lo que no conoce. `provincias` = [{ nombre, valor }]. */
+export function filtrosDesdeUrl(search, { deportesValidos, provincias }) {
+  const p = new URLSearchParams(search);
+  const ids = [...new Set((p.get('deporte') ?? '').split(',').map((x) => x.trim()).filter((id) => deportesValidos.includes(id)))];
+  const slug = slugProvincia(p.get('provincia') ?? '');
+  const prov = slug ? provincias.find((x) => slugProvincia(x.nombre) === slug)?.valor ?? '' : '';
+  return { deportes: ids.length && ids.length < deportesValidos.length ? new Set(ids) : null, provincia: prov };
+}
+
+/** Filtros → «?deporte=padel,futbol&provincia=cordoba» (vacío si no hay filtros). */
+export function consultaDesdeFiltros({ deportes = null, provincia = '' }, deportesValidos) {
+  const p = new URLSearchParams();
+  const ids = deportesValidos.filter((id) => deportes?.has(id));
+  if (ids.length) p.set('deporte', ids.join(','));
+  const nombre = provincia.split('|')[1];
+  if (nombre) p.set('provincia', slugProvincia(nombre));
+  const qs = p.toString().replaceAll('%2C', ',');
+  return qs ? `?${qs}` : '';
+}
+
+// ---------------------------------------------------------------- «Obras cerca tuyo»
+export function distanciaKm(a, b) {
+  const rad = (g) => (g * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+
+/** Obras ubicadas dentro del radio, y la más cercana (para avisar «la más cercana está a N km»). */
+export function obrasCerca(obras, punto, radioKm = 50) {
+  const conDistancia = obras.filter(tieneUbicacion).map((o) => ({ o, km: distanciaKm(punto, o) })).sort((x, y) => x.km - y.km);
+  return { cerca: conDistancia.filter((x) => x.km <= radioKm).map((x) => x.o), masCercana: conDistancia[0] ?? null };
+}
+
+export const sumarCanchas = (obras) => obras.reduce((a, o) => a + (o.cantidad_canchas || 1), 0);

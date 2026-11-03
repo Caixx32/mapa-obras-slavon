@@ -98,7 +98,7 @@ function cuerpo(o, ctx) {
   h.tabIndex = -1;
   c.append(tag, h);
   if (lugar) c.append(el('p', 'lugar', lugar));
-  if (o.estado === 'en_obra') c.append(el('span', 'estado-obra', 'En obra'));
+  if (o.estado === 'en_obra') c.append(el('span', 'estado-obra en-marcha', 'En obra ahora'));
   const dl = el('dl', 'datos');
   dato(dl, 'Tipo', o.tipo, true);
   dato(dl, 'Canchas', o.cantidad_canchas);
