@@ -119,3 +119,6 @@ h1, h2, h3 { margin: 0; font-weight: 800; text-transform: uppercase; line-height
 @media (prefers-reduced-motion: reduce) { .tarjeta, .tarjeta.abierta, .slv-pin .p { transition: none; } }
 /* El título se enfoca por accesibilidad al abrir la tarjeta (lectores de pantalla); no necesita anillo visible. */
 #tarjeta-titulo:focus { outline: none; }
+
+/* Aviso si no carga el mapa de fondo (sin internet o servidor de mapas caído): las obras se siguen viendo. */
+.aviso-mapa { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 450; margin: 0; max-width: 90%; padding: 8px 14px; border-radius: 999px; background: var(--color-carbon); color: #fff; font-size: 0.78rem; font-weight: 700; text-align: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
