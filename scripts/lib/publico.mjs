@@ -3,6 +3,7 @@
 //  - solo campos del modelo (lista blanca). Nunca: fuente, cliente, direcciones, notas, precios.
 //  - falla (no escribe nada) si detecta nombres de clientes, direcciones, mails o teléfonos.
 import { norm, nombreGenerico, redondear2 } from './util.mjs';
+import { limpiarNombre, parecePersona } from './nombres.mjs';
 
 export const CAMPOS_PUBLICOS = [
   'id', 'nombre_club', 'deporte', 'tipo', 'cantidad_canchas', 'provincia', 'ciudad', 'pais',
@@ -18,13 +19,13 @@ const RE_URL = /https?:\/\/|www\./i;
 export function registroPublico(o, fotos = []) {
   const avisos = [];
   let nombre;
-  if (o.nombrable && o.nombre_club) nombre = o.nombre_club;
+  if (o.nombrable && o.nombre_club) nombre = o.nombre_publico ?? limpiarNombre(o.nombre_club, o);
   else {
     nombre = nombreGenerico(o);
     if (o.nombrable && !o.nombre_club) avisos.push(`obra ${o.id}: nombrable = si pero no tiene nombre_club; se muestra el nombre genérico`);
   }
   const mostrarExacto = o.nombrable && o.nombre_club;
-  const coord = (n) => (n === null || n === undefined ? null : mostrarExacto ? n : redondear2(n));
+  const coord = (n) => (n === null || n === undefined ? null : redondear2(n));   // TODAS las obras: coordenadas redondeadas (≈1 km). Las exactas solo en la versión interna.
 
   let descripcion = o.descripcion_corta;
   if (descripcion && !mostrarExacto) {
@@ -123,10 +124,9 @@ export function verificarFugas(registros, obrasInternas) {
     }
     for (const k of Object.keys(r)) if (!CAMPOS_PUBLICOS.includes(k)) problemas.push(`obra ${r.id}: campo no permitido «${k}»`);
     for (const f of r.fotos) if (/_privada/i.test(f.src) || /fotos-internas/i.test(f.src) || /^data\//i.test(f.src)) problemas.push(`obra ${r.id}: foto privada en la versión pública (${f.src})`);
-    if (!r.nombrable) {
-      const decimales = (n) => (n === null ? 0 : (String(n).split('.')[1] ?? '').length);
-      if (decimales(r.lat) > 2 || decimales(r.lng) > 2) problemas.push(`obra ${r.id}: coordenadas con más de 2 decimales en una obra no nombrable`);
-    }
+    const decimales = (n) => (n === null ? 0 : (String(n).split('.')[1] ?? '').length);
+    if (decimales(r.lat) > 2 || decimales(r.lng) > 2) problemas.push(`obra ${r.id}: coordenadas con más de 2 decimales (en la versión pública van todas redondeadas)`);
+    if (r.nombrable && parecePersona(r.nombre_club, r) && !/\b(colegio|escuela|instituto|universidad|municipalidad|municipio|country|barrio|sindicato|gremio|uom|estadio|polideportivo|cooperativa|fundaci[oó]n|mutual|c[ií]rculo|anfiteatro|sociedad|asociaci[oó]n|fomento)\b/i.test(r.nombre_club)) problemas.push(`obra ${r.id}: el nombre «${r.nombre_club}» parece de una persona física`);
   }
   if (problemas.length) {
     const e = new Error(

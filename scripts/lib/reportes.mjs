@@ -144,3 +144,50 @@ export async function escribirSinProvincia(ruta, obras) {
   await wb.xlsx.writeFile(ruta);
   return filas.length;
 }
+
+const ORDEN_PROPUESTA = { revisar: 0, anonima: 1, nombrable: 2 };
+
+/** TODAS las obras con la propuesta de privacidad y el motivo. Se corrige la columna «propuesta» y se devuelve el archivo. */
+export async function escribirRevisarNombres(ruta, filas) {
+  await fs.mkdir(path.dirname(ruta), { recursive: true });
+  const ordenadas = [...filas].sort((a, b) => ORDEN_PROPUESTA[a.propuesta] - ORDEN_PROPUESTA[b.propuesta] || a.id.localeCompare(b.id));
+  const wb = new ExcelJS.Workbook();
+  const ws = hoja(
+    wb,
+    'NOMBRES',
+    [
+      { titulo: 'id', clave: 'id', ancho: 8 },
+      { titulo: 'propuesta (nombrable / anonima / revisar)', clave: 'propuesta', ancho: 22 },
+      { titulo: 'motivo', clave: 'motivo', ancho: 52 },
+      { titulo: 'nombre cargado en la planilla', clave: 'nombre', ancho: 44 },
+      { titulo: 'así se mostraría', clave: 'limpio', ancho: 36 },
+      { titulo: 'ciudad', clave: 'ciudad', ancho: 20 },
+      { titulo: 'provincia', clave: 'provincia', ancho: 16 },
+      { titulo: 'deporte', clave: 'deporte', ancho: 13 },
+      { titulo: 'cliente (interno, para ayudarte a decidir)', clave: 'cliente', ancho: 32 },
+      { titulo: 'se publica', clave: 'publicar', ancho: 10 },
+    ],
+    ordenadas.map((f) => ({ ...f, publicar: f.publicar ? 'sí' : 'no' })),
+  );
+  ws.dataValidations.add(`B2:B${ordenadas.length + 1}`, { type: 'list', allowBlank: false, formulae: ['"nombrable,anonima,revisar"'] });
+  ws.getColumn(2).eachCell({ includeEmpty: false }, (c, n) => { if (n > 1) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF3B0' } }; });
+  await wb.xlsx.writeFile(ruta);
+  return ordenadas.length;
+}
+
+/** Lee revisar-nombres.xlsx (la copia que corrigió una persona). Devuelve Map id → propuesta. Si no existe, Map vacío. */
+export async function leerRevisionNombres(ruta, normalizarPropuesta) {
+  const decisiones = new Map();
+  try { await fs.access(ruta); } catch { return decisiones; }
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.readFile(ruta);
+  const ws = wb.worksheets[0];
+  const val = (c) => { const v = c?.value; return v && typeof v === 'object' ? (v.result ?? v.text ?? '') : v; };
+  ws.eachRow((row, n) => {
+    if (n === 1) return;
+    const id = String(val(row.getCell(1)) ?? '').trim().padStart(4, '0');
+    const prop = normalizarPropuesta(val(row.getCell(2)));
+    if (/^\d{4}$/.test(id) && prop) decisiones.set(id, prop);
+  });
+  return decisiones;
+}
