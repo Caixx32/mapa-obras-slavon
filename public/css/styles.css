@@ -1,0 +1,121 @@
+/* Estilos de la landing. Los colores y la tipografía vienen de tokens.css. */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-family: var(--fuente); font-weight: 600; color: var(--color-texto); background: var(--color-carbon); line-height: 1.4; }
+img { max-width: 100%; }
+button, select { font-family: inherit; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Títulos: ExtraBold, TODO EN MAYÚSCULA, interlineado apretado. Bajadas: Bold/SemiBold en minúscula normal. */
+h1, h2, h3 { margin: 0; font-weight: 800; text-transform: uppercase; line-height: 1.05; }
+/* Etiquetas chicas estilo «// PÁDEL»: doble barra roja + texto en mayúscula ExtraBold. */
+.tag { margin: 0; font-weight: 800; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.06em; }
+.tag::before { content: '//'; color: var(--color-primario); margin-right: 0.4em; }
+
+/* ---------------------------------------------------------------- barra superior */
+.topbar { height: var(--alto-topbar); display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px; background: var(--color-carbon); }
+.topbar img { height: 20px; width: auto; display: block; }
+.topbar .tag { color: var(--color-texto-secundario); }
+.aviso-interno { background: var(--color-primario); color: #fff; text-align: center; font-weight: 800; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 12px; }
+
+/* ---------------------------------------------------------------- sección del mapa */
+.mapa-seccion { display: flex; flex-direction: column; height: calc(100vh - var(--alto-topbar)); height: calc(100dvh - var(--alto-topbar)); min-height: 520px; background: #fff; overflow: hidden; }
+/* Celular: provincia + chips en UNA sola fila deslizable (más lugar para el mapa). */
+.filtros { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border-bottom: 1px solid var(--color-borde); z-index: 500; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.filtros::-webkit-scrollbar { display: none; }
+.chips { display: contents; }
+.chip { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border: 1.5px solid var(--color-borde); border-radius: 999px; background: #fff; color: var(--color-carbon); font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.chip .punto { width: 12px; height: 12px; border-radius: 50%; background: var(--c); flex: none; }
+.chip .n { font-size: 0.72rem; font-weight: 600; color: var(--color-texto-suave); }
+.chip[aria-pressed='true'] { background: var(--color-carbon); border-color: var(--color-carbon); color: #fff; }
+.chip[aria-pressed='true'] .n { color: var(--color-texto-secundario); }
+.select-provincia, .buscador { flex: none; height: 40px; border: 1.5px solid var(--color-borde); border-radius: 10px; background: #fff; color: var(--color-carbon); font-size: 0.85rem; font-weight: 700; padding: 0 12px; }
+.select-provincia { order: -1; width: auto; max-width: 210px; appearance: none; -webkit-appearance: none; padding-right: 34px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2322282C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+.buscador { order: -2; width: 190px; }
+.chip:focus-visible, .select-provincia:focus-visible, .buscador:focus-visible, .btn:focus-visible, .cerrar:focus-visible, .flecha:focus-visible, .carrusel-pista:focus-visible { outline: 3px solid var(--color-primario); outline-offset: 2px; }
+
+.mapa-wrap { position: relative; flex: 1; min-height: 0; }
+#mapa { position: absolute; inset: 0; background: #e9ecee; }
+.leaflet-container { font-family: var(--fuente); }
+.leaflet-control-attribution { font-size: 10px; }
+.conteo { position: absolute; left: 50%; transform: translateX(-50%); bottom: 26px; white-space: nowrap; z-index: 450; margin: 0; padding: 6px 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.96); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); font-size: 0.74rem; font-weight: 800; color: var(--color-carbon); pointer-events: none; }
+
+/* ---------------------------------------------------------------- pines y clusters */
+.slv-pin { background: none; border: 0; }
+.slv-pin .p { display: block; width: 24px; height: 24px; margin: 5px; border-radius: 50%; background: var(--c); border: 3px solid #fff; box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5); transition: transform 0.15s; }
+.slv-pin.en-obra .p { background: #fff; border: 5px solid var(--c); }   /* hueco = todavía en obra */
+.slv-pin:hover .p { transform: scale(1.18); }
+.slv-pin.sel { z-index: 1000 !important; }
+.slv-pin.sel .p { transform: scale(1.4); box-shadow: 0 0 0 4px rgba(34, 40, 44, 0.35), 0 2px 8px rgba(0, 0, 0, 0.5); }
+.slv-pin:focus-visible { outline: none; }
+.slv-pin:focus-visible .p { outline: 3px solid var(--color-carbon); outline-offset: 2px; }
+.slv-cluster { background: none; }
+.slv-cluster div { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 50%; background: var(--color-carbon); color: #fff; border: 3px solid #fff; font-size: 0.85rem; font-weight: 800; box-shadow: 0 0 0 5px rgba(34, 40, 44, 0.22), 0 2px 8px rgba(0, 0, 0, 0.45); }
+.slv-cluster.m div { font-size: 0.95rem; }
+.slv-cluster.g div { font-size: 1.05rem; background: var(--color-primario); box-shadow: 0 0 0 6px rgba(229, 13, 45, 0.25), 0 2px 8px rgba(0, 0, 0, 0.45); }
+
+.vacio { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 450; padding: 18px 20px; max-width: 86%; text-align: center; background: #fff; border-radius: var(--radio); box-shadow: var(--sombra); font-weight: 700; }
+.vacio p { margin: 0 0 12px; }
+.error-carga { padding: 24px; text-align: center; font-weight: 700; }
+
+/* ---------------------------------------------------------------- botones */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 20px; border: 0; border-radius: 12px; background: var(--color-primario); color: #fff; font-size: 0.92rem; font-weight: 800; text-decoration: none; cursor: pointer; }
+.btn:hover { filter: brightness(1.08); }
+.btn.secundario { background: var(--color-carbon); }
+.btn svg { width: 20px; height: 20px; fill: currentColor; flex: none; }
+
+/* ---------------------------------------------------------------- tarjeta de obra */
+.tarjeta { position: absolute; z-index: 1100; background: #fff; box-shadow: var(--sombra); overflow: hidden; display: flex; flex-direction: column; visibility: hidden; transition: transform 0.28s ease, visibility 0s 0.28s; }
+.tarjeta.abierta { visibility: visible; transform: none; transition: transform 0.28s ease; }
+.tarjeta .asa { display: none; }
+.cerrar { position: absolute; top: 10px; right: 10px; z-index: 3; width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(34, 40, 44, 0.78); color: #fff; font-size: 1.5rem; line-height: 1; cursor: pointer; }
+.tarjeta-scroll { overflow-y: auto; overscroll-behavior: contain; flex: 1 1 auto; min-height: 0; }
+
+.carrusel { position: relative; background: var(--color-carbon); }
+.carrusel-pista { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.carrusel-pista::-webkit-scrollbar { display: none; }
+.carrusel-slide { position: relative; flex: 0 0 100%; scroll-snap-align: start; aspect-ratio: 2.1 / 1; }
+.carrusel-slide img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.flecha { position: absolute; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.92); color: var(--color-carbon); font-size: 1.3rem; font-weight: 800; cursor: pointer; display: none; z-index: 2; }
+.flecha.prev { left: 8px; } .flecha.next { right: 8px; }
+@media (hover: hover) { .carrusel.multiple .flecha { display: block; } }
+.puntos { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; justify-content: center; gap: 6px; z-index: 2; }
+.puntos span { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.55); }
+.puntos span.on { background: #fff; transform: scale(1.25); }
+
+.cuerpo { padding: 16px 18px 18px; }
+.cuerpo .tag { color: var(--color-carbon); display: flex; align-items: center; gap: 0; }
+.cuerpo .tag .punto { width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-left: 8px; }
+.cuerpo h2 { margin-top: 8px; font-size: 1.28rem; color: var(--color-carbon); }
+.cuerpo .lugar { margin: 6px 0 0; font-size: 0.92rem; font-weight: 700; color: var(--color-texto-suave); }
+.estado-obra { display: inline-block; margin-top: 10px; padding: 4px 10px; border-radius: 999px; background: var(--color-carbon); color: #fff; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.datos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; margin: 16px 0 0; }
+.datos div { min-width: 0; }
+.datos dt { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-texto-suave); }
+.datos dd { margin: 2px 0 0; font-size: 0.95rem; font-weight: 700; color: var(--color-carbon); overflow-wrap: anywhere; }
+.datos .ancho { grid-column: 1 / -1; }
+.desc { margin: 14px 0 0; font-size: 0.9rem; font-weight: 600; color: var(--color-texto-suave); }
+.cta { position: sticky; bottom: 0; z-index: 2; padding: 14px 18px 16px; background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff 30%); }
+.cta .btn { width: 100%; }
+.interno-extra { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: var(--color-fondo-claro); font-size: 0.78rem; font-weight: 600; color: var(--color-carbon); }
+.interno-extra summary { cursor: pointer; font-weight: 800; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.06em; }
+.interno-extra dl { margin: 8px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
+.interno-extra dt { font-weight: 800; color: var(--color-texto-suave); }
+.interno-extra dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Celular: panel inferior */
+.tarjeta { left: 0; right: 0; bottom: 0; max-height: 68%; border-radius: 20px 20px 0 0; transform: translateY(105%); }
+.tarjeta .asa { display: block; position: absolute; top: 0; left: 0; right: 0; height: 24px; z-index: 3; touch-action: none; cursor: grab; }
+.tarjeta .asa::after { content: ''; position: absolute; top: 8px; left: 50%; width: 44px; height: 5px; margin-left: -22px; border-radius: 3px; background: rgba(255, 255, 255, 0.85); box-shadow: 0 0 4px rgba(0, 0, 0, 0.35); }
+/* Escritorio: filtros en una barra, tarjeta lateral dentro del mapa */
+@media (min-width: 900px) {
+  .filtros { flex-wrap: wrap; overflow: visible; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 auto; }
+  .select-provincia { order: 0; }
+  .carrusel-slide { aspect-ratio: 3 / 2; }
+  .tarjeta { left: 16px; top: 16px; bottom: auto; right: auto; width: 392px; max-height: calc(100% - 32px); border-radius: var(--radio); transform: translateX(-115%); }
+  .tarjeta .asa { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .tarjeta, .tarjeta.abierta, .slv-pin .p { transition: none; } }
+/* El título se enfoca por accesibilidad al abrir la tarjeta (lectores de pantalla); no necesita anillo visible. */
+#tarjeta-titulo:focus { outline: none; }

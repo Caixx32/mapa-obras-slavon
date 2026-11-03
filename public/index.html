@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Mapa de obras · SLAVON Ingeniería Deportiva</title>
+  <meta name="description" content="Mirá en el mapa las canchas de pádel, fútbol, hockey y más que construimos en todo el país. Diseño, fabricación propia, instalación y posventa. Llave en mano.">
+  <meta name="theme-color" content="#22282C">
+  <!-- BORRADOR: que los buscadores no lo muestren. Al publicar la versión oficial, borrar esta línea y public/robots.txt -->
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://caixx32.github.io/mapa-obras-slavon/">
+
+  <!-- Al compartir el link (WhatsApp, redes) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Slavon Ingeniería Deportiva">
+  <meta property="og:locale" content="es_AR">
+  <meta property="og:title" content="Mirá todo lo que construimos · SLAVON">
+  <meta property="og:description" content="Canchas de pádel, fútbol y hockey en todo el país. Explorá las obras en el mapa y consultanos por WhatsApp.">
+  <meta property="og:url" content="https://caixx32.github.io/mapa-obras-slavon/">
+  <meta property="og:image" content="https://caixx32.github.io/mapa-obras-slavon/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Mapa de obras de SLAVON Ingeniería Deportiva">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Mirá todo lo que construimos · SLAVON">
+  <meta name="twitter:description" content="Canchas de pádel, fútbol y hockey en todo el país. Explorá las obras en el mapa.">
+  <meta name="twitter:image" content="https://caixx32.github.io/mapa-obras-slavon/img/og.png">
+
+  <link rel="icon" type="image/svg+xml" href="img/isotipo-rojo.svg">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="preload" href="fonts/montserrat-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/montserrat-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="vendor/markercluster/MarkerCluster.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/landing.css">
+</head>
+<body class="landing" data-modo="publico" data-base="">
+
+  <!-- 1. HERO -->
+  <header class="hero" id="hero">
+    <div class="contenedor">
+      <div class="hero-top">
+        <img class="logo" src="img/logo-slavon-oscuro.svg" alt="SLAVON" width="278" height="26">
+        <a class="hero-web" data-web href="https://slavon.com.ar" target="_blank" rel="noopener">slavon.com.ar</a>
+      </div>
+      <p class="tag hero-tag" id="hero-etiqueta">Mapa de obras</p>
+      <h1 id="hero-titular">Las canchas que construimos, en un mapa</h1>
+      <p class="hero-bajada" id="hero-bajada">Diseño, fabricación propia, instalación y posventa. Llave en mano.</p>
+      <div class="hero-acciones">
+        <a class="btn" data-wa data-wa-icono href="https://wa.me/"><span id="hero-wa-texto">Quiero una cancha</span></a>
+        <a class="btn contorno" id="hero-mapa" href="#mapa-obras">Ver el mapa</a>
+      </div>
+
+      <!-- 2. CONTADORES -->
+      <div class="contadores" id="contadores" role="group" aria-label="La obra de SLAVON en números"></div>
+    </div>
+  </header>
+
+  <main>
+    <!-- 3. MAPA -->
+    <section class="mapa-seccion" id="mapa-obras" aria-label="Mapa de obras">
+      <div class="filtros" role="group" aria-label="Filtros del mapa">
+        <div class="chips" id="chips"></div>
+        <select id="provincia" class="select-provincia" aria-label="Provincia"></select>
+      </div>
+      <div class="mapa-wrap">
+        <div id="mapa" role="region" aria-label="Mapa interactivo de obras"></div>
+        <p class="conteo" id="conteo" aria-live="polite"></p>
+        <div class="vacio" id="vacio" hidden>
+          <p>No hay obras con esos filtros.</p>
+          <button type="button" class="btn secundario">Quitar filtros</button>
+        </div>
+        <aside id="tarjeta" class="tarjeta" aria-hidden="true"></aside>
+      </div>
+    </section>
+    <noscript><p class="error-carga" style="color:#fff">Para ver el mapa de obras necesitás activar JavaScript.</p></noscript>
+
+    <!-- 4. OBRAS DESTACADAS (solo se muestra si hay obras marcadas como destacadas) -->
+    <section class="destacadas" id="destacadas" hidden aria-labelledby="destacadas-titulo">
+      <div class="contenedor">
+        <p class="tag" id="destacadas-etiqueta">Obras destacadas</p>
+        <h2 id="destacadas-titulo">Algunas de nuestras obras</h2>
+        <div class="grilla" id="grilla-destacadas"></div>
+      </div>
+    </section>
+
+    <!-- 5. CIERRE -->
+    <section class="cierre" id="cierre" aria-labelledby="cierre-titulo">
+      <div class="contenedor cierre-grid">
+        <div>
+          <p class="tag" id="cierre-etiqueta">Cómo trabajamos</p>
+          <h2 id="cierre-titulo">Contanos qué cancha querés</h2>
+          <ul class="pilares" id="pilares">
+            <li class="pilar"><strong>Ingeniería</strong><span>Diseñamos cada cancha para el uso que va a tener.</span></li>
+            <li class="pilar"><strong>Fabricación propia</strong><span>Fabricamos nosotros lo que instalamos.</span></li>
+            <li class="pilar"><strong>Llave en mano</strong><span>Del proyecto a la cancha lista, con un solo responsable.</span></li>
+            <li class="pilar"><strong>Posventa real</strong><span>Seguimos con vos después de la obra.</span></li>
+          </ul>
+        </div>
+        <div class="cierre-cta">
+          <a class="btn grande" data-wa data-wa-icono href="https://wa.me/"><span id="cierre-wa-texto">Escribinos por WhatsApp</span></a>
+          <a class="enlace-ig" data-instagram href="https://www.instagram.com/slavon.sport/"><span>Seguinos en Instagram</span></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor pie-fila">
+      <img src="img/logo-slavon-oscuro.svg" alt="SLAVON" width="214" height="20">
+      <p>© <span id="anio">2026</span> Slavon Ingeniería Deportiva · <a data-web href="https://slavon.com.ar">slavon.com.ar</a></p>
+    </div>
+  </footer>
+
+  <!-- 6. WHATSAPP FLOTANTE -->
+  <a class="wa-flotante" data-wa data-wa-icono href="https://wa.me/" aria-label="Consultar por WhatsApp"><span>WhatsApp</span></a>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="vendor/markercluster/leaflet.markercluster.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

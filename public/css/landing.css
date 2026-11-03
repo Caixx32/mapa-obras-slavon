@@ -1,0 +1,89 @@
+/* Landing pública: hero, contadores, obras destacadas, cierre, pie y WhatsApp flotante.
+   Colores y tipografía: ver tokens.css. */
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+.contenedor { width: min(1160px, 100% - 32px); margin-inline: auto; }
+@media (min-width: 900px) { .contenedor { width: min(1160px, 100% - 64px); } }
+
+/* ---------------------------------------------------------------- 1. hero */
+.hero { position: relative; isolation: isolate; overflow: hidden; padding: 22px 0 46px; background: var(--color-carbon); color: var(--color-blanco); }
+.hero::before { content: ''; position: absolute; inset: 0; z-index: -2; background: repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.035) 0 84px, transparent 84px 168px); }
+.hero::after { content: ''; position: absolute; z-index: -1; right: -90px; bottom: -60px; width: min(72vw, 580px); aspect-ratio: 2.05 / 1; background: url('../img/isotipo-blanco.svg') no-repeat center / contain; opacity: 0.06; transform: rotate(-4deg); }
+.hero-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(44px, 9vw, 100px); }
+.hero .logo { display: block; width: auto; height: 22px; }
+@media (min-width: 700px) { .hero .logo { height: 26px; } }
+.hero-web { color: var(--color-texto-secundario); font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.hero-web:hover { color: #fff; }
+.hero-tag { margin-bottom: 16px; color: var(--color-texto-secundario); }
+.hero h1 { max-width: 16ch; font-size: clamp(2.15rem, 7.4vw, 4.75rem); letter-spacing: -0.01em; }
+.hero h1 .num { color: var(--color-primario); }
+.hero-bajada { max-width: 36ch; margin: 20px 0 0; font-size: clamp(1.05rem, 2.6vw, 1.4rem); font-weight: 600; line-height: 1.4; color: var(--color-texto-secundario); }
+.hero-acciones { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+.btn.contorno { background: transparent; border: 2px solid rgba(255, 255, 255, 0.38); color: #fff; }
+.btn.contorno:hover { border-color: #fff; filter: none; }
+.btn.grande { width: 100%; min-height: 66px; padding: 0 28px; border-radius: 14px; font-size: 1.12rem; }
+
+/* ---------------------------------------------------------------- 2. contadores */
+.contadores { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 16px; margin-top: clamp(46px, 8vw, 76px); padding-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.16); }
+@media (min-width: 760px) { .contadores { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; } }
+.contador .cifra { margin: 0; font-size: clamp(2.2rem, 6.2vw, 3.6rem); font-weight: 800; line-height: 1; color: var(--color-primario); font-variant-numeric: tabular-nums; }
+.contador .rotulo { margin: 10px 0 0; font-size: 0.78rem; font-weight: 700; line-height: 1.3; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-texto-secundario); }
+
+/* ---------------------------------------------------------------- 3. mapa (altura casi completa) */
+.landing .mapa-seccion { height: min(88vh, 860px); height: min(88dvh, 860px); min-height: 540px; }
+
+/* ---------------------------------------------------------------- 4. obras destacadas */
+.destacadas { padding: clamp(56px, 9vw, 96px) 0; background: var(--color-fondo-claro); }
+.destacadas .tag { color: var(--color-carbon); }
+.destacadas h2, .cierre h2 { margin-top: 12px; font-size: clamp(1.7rem, 4.6vw, 2.8rem); }
+.destacadas h2 { color: var(--color-carbon); }
+.grilla { display: grid; grid-template-columns: 1fr; gap: 24px; margin-top: 36px; }
+@media (min-width: 620px) { .grilla { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1000px) { .grilla { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.destacada { display: flex; flex-direction: column; overflow: hidden; border-radius: var(--radio); background: #fff; box-shadow: 0 2px 14px rgba(34, 40, 44, 0.08); }
+.destacada-foto { aspect-ratio: 3 / 2; background: var(--color-carbon); }
+.destacada-foto img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.destacada-cuerpo { display: flex; flex: 1; flex-direction: column; padding: 18px 20px 20px; }
+.destacada-cuerpo .tag { display: flex; align-items: center; color: var(--color-carbon); }
+.destacada-cuerpo .tag .punto { width: 10px; height: 10px; margin-left: 8px; border-radius: 50%; background: var(--c); }
+.destacada h3 { margin-top: 10px; font-size: 1.15rem; color: var(--color-carbon); }
+.destacada .lugar { margin: 6px 0 0; font-size: 0.9rem; font-weight: 700; color: var(--color-texto-suave); }
+.destacada .datos-mini { margin: 4px 0 0; font-size: 0.85rem; font-weight: 600; color: var(--color-texto-suave); }
+.enlace-mapa { align-self: flex-start; margin-top: auto; padding: 16px 0 0; border: 0; background: none; color: var(--color-primario); font: 800 0.88rem var(--fuente); letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
+.enlace-mapa:hover { text-decoration: underline; }
+.enlace-mapa:focus-visible { outline: 3px solid var(--color-primario); outline-offset: 3px; }
+
+/* ---------------------------------------------------------------- 5. cierre */
+.cierre { padding: clamp(56px, 9vw, 104px) 0; background: var(--color-carbon); color: #fff; }
+.cierre .tag { color: var(--color-texto-secundario); }
+.cierre h2 { max-width: 14ch; color: #fff; }
+.cierre-grid { display: grid; gap: 44px; }
+@media (min-width: 900px) { .cierre-grid { grid-template-columns: 1.15fr 0.85fr; align-items: center; gap: 72px; } }
+.pilares { margin: 32px 0 0; padding: 0; list-style: none; }
+.pilar { display: grid; gap: 4px; padding: 16px 0; border-top: 1px solid rgba(255, 255, 255, 0.16); }
+.pilar:last-child { border-bottom: 1px solid rgba(255, 255, 255, 0.16); }
+.pilar strong { font-size: 1rem; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; }
+.pilar span { font-weight: 600; color: var(--color-texto-secundario); }
+@media (min-width: 700px) { .pilar { grid-template-columns: 220px 1fr; align-items: baseline; gap: 24px; } }
+.cierre-cta { display: grid; gap: 20px; }
+.enlace-ig { display: inline-flex; align-items: center; justify-self: start; gap: 10px; padding-bottom: 3px; border-bottom: 2px solid var(--color-primario); color: #fff; font-weight: 700; text-decoration: none; }
+.enlace-ig svg { width: 22px; height: 22px; fill: currentColor; }
+.enlace-ig:focus-visible, .pie a:focus-visible, .hero-web:focus-visible { outline: 3px solid var(--color-primario); outline-offset: 4px; }
+
+/* ---------------------------------------------------------------- pie */
+.pie { padding: 28px 0 96px; background: #1b2023; color: var(--color-texto-secundario); }
+.pie-fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; }
+.pie img { display: block; width: auto; height: 18px; }
+.pie p { margin: 0; font-size: 0.82rem; font-weight: 600; }
+.pie a { color: #fff; }
+
+/* ---------------------------------------------------------------- 6. WhatsApp flotante (siempre visible) */
+.wa-flotante { position: fixed; z-index: 1200; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 10px; height: 56px; padding: 0 22px 0 16px; border-radius: 999px; background: var(--color-primario); color: #fff; font-size: 0.92rem; font-weight: 800; text-decoration: none; box-shadow: 0 8px 26px rgba(0, 0, 0, 0.38); transition: opacity 0.2s, transform 0.2s; }
+.wa-flotante svg { width: 26px; height: 26px; flex: none; fill: currentColor; }
+.wa-flotante:hover { filter: brightness(1.08); }
+.wa-flotante:focus-visible { outline: 3px solid #fff; outline-offset: 3px; box-shadow: 0 0 0 6px var(--color-primario), 0 8px 26px rgba(0, 0, 0, 0.38); }
+@media (max-width: 640px) {
+  .wa-flotante { width: 56px; padding: 0; justify-content: center; }
+  .wa-flotante span { display: none; }
+  body.tarjeta-abierta .wa-flotante { opacity: 0; pointer-events: none; transform: scale(0.9); }   /* la tarjeta ya trae su propio botón */
+}
+@media (max-width: 560px) { .hero-acciones .btn { flex: 1 1 100%; } }

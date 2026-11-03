@@ -1,0 +1,32 @@
+# ============================================================================
+#  ESTE REPOSITORIO ES PÚBLICO. Nada de lo que está acá abajo debe subirse.
+# ============================================================================
+
+# --- Datos internos (nombres de clientes, direcciones, ubicaciones exactas) ---
+obras-maestra.xlsx
+obras-maestra*.xlsx
+~$*.xlsx
+*.xlsx
+!package-lock.json
+/data/
+/reportes/
+/interno/data/
+/interno/fotos/
+
+# --- Fotos originales (cualquier tamaño, incluye las _privada) ---
+/fotos/
+**/*_privada*
+
+# --- Archivos de origen que traen datos de clientes / servicios de Google ---
+*.kml
+*.kmz
+Canchas*.xlsx
+Obras*.xlsx
+
+# --- Herramientas ---
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
