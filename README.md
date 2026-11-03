@@ -15,10 +15,14 @@ fotos/                    ← fotos originales, una carpeta por obra (solo en tu
 fotos-pendientes.xlsx     ← obras que todavía no tienen foto (lo genera build-data, no se sube)
 reportes/                 ← avisos y coordenadas aproximadas para revisar (no se sube)
 data/                     ← versión interna (JSON con nombres reales y fotos privadas) (no se sube)
+interno/index.html        ← la página de la versión interna (solo el código; los datos están en data/)
 public/                   ← lo ÚNICO que se publica en la web
+  index.html, css/, js/   ← la landing (colores y tipografía en css/tokens.css)
+  config.json             ← WhatsApp, Instagram, textos y colores (se edita sin tocar código)
   data/obras-publicas.json
   fotos/<id>/…webp        ← fotos optimizadas
-scripts/                  ← build-data y sus módulos
+  img/, fonts/, vendor/   ← logos, imágenes genéricas, Montserrat y librerías del mapa (todo local)
+scripts/                  ← build-data, servidor local y tests
 ```
 
 ## Requisitos
@@ -95,6 +99,39 @@ no aparecen en el mapa (sí en los contadores) y quedan en la misma planilla.
 direcciones, notas ni precios), con nombres genéricos y coordenadas redondeadas para las obras no nombrables, y **sin fotos `_privada`**.
 Antes de escribir nada revisa que no se haya colado un nombre de cliente o de club no nombrable, una dirección, un mail,
 un teléfono o un link en los textos; si encuentra algo, **frena y no genera la versión pública**.
+
+## Ver la web en tu computadora
+
+```bash
+npm run servir
+```
+
+Abre `http://localhost:8080` con **exactamente lo que se publica** (solo la carpeta `public/`).
+
+## Versión interna (para mostrar en reuniones)
+
+```bash
+npm run interno
+```
+
+Abre `http://localhost:8080/interno/`: el mismo mapa pero con **nombres reales, ubicaciones exactas y todas las fotos** (también las `_privada`),
+un buscador (club, cliente, ciudad…) y los datos internos de cada obra. Solo escucha en tu computadora y **no se publica**
+(la planilla, los reportes y el resto del proyecto no son accesibles desde ahí). Hay que haber corrido antes `npm run build-data`.
+
+## Colores, textos, WhatsApp e Instagram
+
+- **Colores y tipografía:** todos en un solo lugar, `public/css/tokens.css` (`--color-primario`, `--color-carbon`, un color por deporte, etc.).
+  Para reemplazarlos por los del manual de marca se cambia ahí, o en la sección `colores` de `public/config.json`.
+- **Número de WhatsApp, Instagram, textos del titular y mensajes:** `public/config.json`. El número va con código de país, solo dígitos
+  (ejemplo de celular argentino: `5491155551234`). Mientras esté vacío, los botones abren WhatsApp sin destinatario.
+- **Tipografía:** Montserrat se sirve desde el propio sitio (`public/fonts/`), no desde Google Fonts.
+
+Después de editar, volvé a publicar. No hace falta correr `build-data`.
+
+## Librerías del mapa
+
+Leaflet, Leaflet.markercluster y Montserrat están copiadas en `public/vendor/` y `public/fonts/` (no se usan CDNs).
+Si algún día se actualizan: `npm install` y `npm run vendor`.
 
 ## Tests
 

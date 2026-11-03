@@ -1,0 +1,35 @@
+/* ============================================================================
+   TODOS los colores y la tipografía, en UN solo lugar.
+   Para cambiarlos, editá solo este archivo (o la sección "colores" de config.json,
+   que los pisa al cargar la página).
+   ============================================================================ */
+:root {
+  /* --- Marca SLAVON --- */
+  --color-primario: #E50D2D;            /* Rojo SLAVON: acentos, botones, números destacados */
+  --color-carbon: #22282C;              /* Gris carbón: fondos oscuros y texto principal */
+  --color-blanco: #FFFFFF;
+  --color-texto-secundario: #C9CDD1;    /* Gris de texto secundario sobre fondo oscuro */
+
+  /* --- Apoyo (neutros para el mapa y las tarjetas) --- */
+  --color-fondo-claro: #F3F4F5;
+  --color-borde: #D9DDE0;
+  --color-texto: #22282C;
+  --color-texto-suave: #5B646B;
+
+  /* --- Un color por deporte (ajustados para distinguirse sobre el mapa claro) --- */
+  --dep-padel: #E50D2D;                 /* pádel = rojo */
+  --dep-cesped_padel: #7CB518;          /* césped de pádel = verde lima */
+  --dep-futbol: #1F5FD6;                /* fútbol = azul */
+  --dep-hockey: #EC4899;                /* hockey = rosa */
+  --dep-tenis: #F59E0B;                 /* tenis = ámbar */
+  --dep-residencial: #7A838A;           /* residencial = gris */
+  --dep-otro: #3F474D;                  /* otros = gris oscuro */
+
+  /* --- Tipografía: Montserrat (se sirve desde /fonts, no desde Google) --- */
+  --fuente: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* --- Medidas --- */
+  --alto-topbar: 56px;
+  --radio: 14px;
+  --sombra: 0 10px 34px rgba(34, 40, 44, 0.28);
+}

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Mapa de obras · SLAVON</title>
+  <meta name="description" content="Cada cancha que construimos, en un mapa. Pádel, fútbol, hockey y más: mirá las obras de SLAVON Ingeniería Deportiva.">
+  <meta name="theme-color" content="#22282C">
+  <link rel="icon" type="image/svg+xml" href="img/isotipo-rojo.svg">
+  <link rel="preload" href="fonts/montserrat-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="vendor/markercluster/MarkerCluster.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-modo="publico" data-base="">
+  <header class="topbar">
+    <img src="img/logo-slavon-oscuro.svg" alt="SLAVON" width="214" height="20">
+    <p class="tag">Mapa de obras</p>
+  </header>
+  <main>
+    <section class="mapa-seccion" aria-label="Mapa de obras">
+      <div class="filtros" role="group" aria-label="Filtros del mapa">
+        <div class="chips" id="chips"></div>
+        <select id="provincia" class="select-provincia" aria-label="Provincia"></select>
+      </div>
+      <div class="mapa-wrap">
+      <div id="mapa" role="region" aria-label="Mapa interactivo de obras"></div>
+      <p class="conteo" id="conteo" aria-live="polite"></p>
+      <div class="vacio" id="vacio" hidden>
+        <p>No hay obras con esos filtros.</p>
+        <button type="button" class="btn secundario">Quitar filtros</button>
+      </div>
+      <aside id="tarjeta" class="tarjeta" aria-hidden="true"></aside>
+      </div>
+    </section>
+    <noscript><p class="error-carga" style="color:#fff">Para ver el mapa de obras necesitás activar JavaScript.</p></noscript>
+  </main>
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="vendor/markercluster/leaflet.markercluster.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

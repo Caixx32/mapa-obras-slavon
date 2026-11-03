@@ -1,0 +1,41 @@
+{
+  "_ayuda": "Este archivo se edita sin tocar código. Guardalo, volvé a publicar y listo.",
+
+  "whatsapp": "",
+  "_ayuda_whatsapp": "Número comercial con código de país, solo dígitos y sin espacios ni signos. Ejemplo (celular de Argentina): 5491155551234",
+
+  "instagram": "",
+  "_ayuda_instagram": "Link completo, por ejemplo https://www.instagram.com/usuario",
+
+  "web": "https://slavon.com.ar",
+
+  "hero": {
+    "titular": "Más de {N} canchas construidas en {paises}",
+    "bajada": "Diseño, fabricación propia, instalación y posventa. Llave en mano.",
+    "boton": "Quiero una cancha"
+  },
+
+  "mensajes": {
+    "whatsapp_obra": "Hola SLAVON, vi la obra {obra} en el mapa y quiero consultar por {producto}.",
+    "whatsapp_general": "Hola SLAVON, vi el mapa de obras y quiero consultar por una cancha."
+  },
+
+  "pilares": [
+    { "titulo": "Ingeniería", "texto": "Cada cancha se calcula y se diseña para el uso real que va a tener." },
+    { "titulo": "Fabricación propia", "texto": "Fabricamos nosotros: controlamos la calidad y los tiempos." },
+    { "titulo": "Llave en mano", "texto": "Del proyecto a la cancha lista para jugar, con un solo responsable." },
+    { "titulo": "Posventa real", "texto": "Seguimos después de la obra: mantenimiento, repuestos y respuestas." }
+  ],
+
+  "colores": {
+    "_ayuda": "Opcional. Si completás un color, pisa al de css/tokens.css. Dejalo vacío para usar los de la marca.",
+    "primario": "",
+    "carbon": "",
+    "texto_secundario": ""
+  },
+
+  "mapa": {
+    "tiles": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    "atribucion": "© <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> · © <a href=\"https://carto.com/attributions\" target=\"_blank\" rel=\"noopener\">CARTO</a>"
+  }
+}
