@@ -26,7 +26,7 @@ function iconoCluster(cluster) {
 export function crearMapa(contenedor, opciones) {
   const map = L.map(contenedor, { zoomControl: false, attributionControl: false, minZoom: 3, maxZoom: 18, zoomSnap: 0.5, zoomDelta: 1 }).setView(ARGENTINA, 4.5);
   L.control.zoom({ position: 'topright', zoomInTitle: 'Acercar', zoomOutTitle: 'Alejar' }).addTo(map);
-  L.control.attribution({ prefix: false, position: 'bottomright' }).addAttribution(opciones.atribucion).addTo(map);
+  L.control.attribution({ prefix: false, position: 'bottomleft' }).addAttribution(opciones.atribucion).addTo(map);
   L.tileLayer(opciones.tiles, { subdomains: 'abcd', maxZoom: 20, maxNativeZoom: 20, detectRetina: false }).addTo(map);
 
   const grupo = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 46, spiderfyOnMaxZoom: true, chunkedLoading: true, iconCreateFunction: iconoCluster }).addTo(map);

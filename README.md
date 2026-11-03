@@ -18,6 +18,7 @@ data/                     ← versión interna (JSON con nombres reales y fotos 
 interno/index.html        ← la página de la versión interna (solo el código; los datos están en data/)
 public/                   ← lo ÚNICO que se publica en la web
   index.html, css/, js/   ← la landing (colores y tipografía en css/tokens.css)
+  site.webmanifest        ← nombre e íconos al guardar la página en el celular
   config.json             ← WhatsApp, Instagram, textos y colores (se edita sin tocar código)
   data/obras-publicas.json
   fotos/<id>/…webp        ← fotos optimizadas
@@ -122,11 +123,31 @@ un buscador (club, cliente, ciudad…) y los datos internos de cada obra. Solo e
 
 - **Colores y tipografía:** todos en un solo lugar, `public/css/tokens.css` (`--color-primario`, `--color-carbon`, un color por deporte, etc.).
   Para reemplazarlos por los del manual de marca se cambia ahí, o en la sección `colores` de `public/config.json`.
-- **Número de WhatsApp, Instagram, textos del titular y mensajes:** `public/config.json`. El número va con código de país, solo dígitos
-  (ejemplo de celular argentino: `5491155551234`). Mientras esté vacío, los botones abren WhatsApp sin destinatario.
+- **Todo el texto de la página, el número de WhatsApp y el Instagram:** `public/config.json` (titular, bajada, botones, rótulos de los contadores,
+  los 4 pilares, mensajes de WhatsApp). El número va con código de país, solo dígitos (ejemplo: `5491155551234`).
+  En el titular, `{N}` es el número calculado de los datos y `{paises}` los países con obras. Dejando el Instagram vacío, el botón se oculta.
 - **Tipografía:** Montserrat se sirve desde el propio sitio (`public/fonts/`), no desde Google Fonts.
+- **Logos:** `public/img/` tiene los trazos originales del PDF de logos (el nombre «SLAVON» en versión para fondo claro y para fondo oscuro, e isotipo).
+  Se usó el nombre sin la bajada «High Sport Performance», que el manual indica no usar.
 
 Después de editar, volvé a publicar. No hace falta correr `build-data`.
+
+## Qué números se muestran
+
+Los contadores y el titular salen de los datos (`build-data` los calcula): solo cuentan obras **terminadas** y con `publicar = si`.
+«Canchas de pádel» suma `padel` + `cesped_padel`; «canchas de césped» es todo lo demás. El «Más de N» del titular redondea hacia
+abajo de a 50, para que nunca supere el total real. Si hay obras en Uruguay, el titular dice «Argentina y Uruguay» solo.
+
+## Obras destacadas
+
+Marcá `destacada = si` en la planilla y corré `build-data`: esas obras aparecen en una grilla con foto grande y un botón «Ver en el mapa».
+Si no hay ninguna marcada, la sección no se muestra. Conviene que tengan foto (si no, se ve la imagen genérica del deporte).
+
+## Al compartir el link (WhatsApp, redes)
+
+Las etiquetas Open Graph de `public/index.html` y la imagen `public/img/og.png` hacen que el link se vea con título, descripción e imagen.
+La imagen se arma desde `scripts/og/og.html` (abrirla en el navegador a 1200×630 y sacar una captura). Las URLs de `og:url`, `og:image` y
+`canonical` apuntan a `https://caixx32.github.io/mapa-obras-slavon/`: si el sitio termina en otra dirección (por ejemplo un dominio propio), hay que cambiarlas ahí.
 
 ## Librerías del mapa
 

@@ -2,6 +2,7 @@
 import { DEPORTES, alternarDeporte, filtrar, contarPorDeporte, agruparProvincias, tieneUbicacion } from './logica.js';
 import { crearMapa, colorDeporte } from './mapa.js';
 import { crearTarjeta } from './tarjeta.js';
+import { iniciarLanding } from './landing.js';
 
 const modo = document.body.dataset.modo === 'interno' ? 'interno' : 'publico';
 const baseSitio = document.body.dataset.base ?? '';                 // dónde está public/ respecto de esta página
@@ -54,10 +55,12 @@ async function iniciar() {
 
   function abrirObra(o) {
     tarjeta.abrir(o);
+    document.body.classList.add('tarjeta-abierta');
     history.replaceState(null, '', `#obra=${o.id}`);
     requestAnimationFrame(() => mapa.mostrarObra(o, { desplazarY: esEscritorio.matches ? 0 : Math.round(tarjeta.altoPanel() / 2) }));
   }
   tarjeta.alCerrar(() => {
+    document.body.classList.remove('tarjeta-abierta');
     mapa.desmarcar();
     if (location.hash.startsWith('#obra=')) history.replaceState(null, '', location.pathname + location.search);
   });
@@ -100,11 +103,12 @@ async function iniciar() {
 
   // ---------------- aplicar filtros
   const vacio = $('vacio');
-  vacio.querySelector('button').addEventListener('click', () => {
+  function reiniciarFiltros({ ajustar = true } = {}) {
     estado.deportes = null; estado.provincia = ''; estado.texto = '';
     sel.value = ''; if (buscador) buscador.value = '';
-    aplicar();
-  });
+    aplicar({ ajustar });
+  }
+  vacio.querySelector('button').addEventListener('click', () => reiniciarFiltros());
 
   function aplicar({ ajustar = true } = {}) {
     const visibles = filtrar(obras, estado);
@@ -126,9 +130,19 @@ async function iniciar() {
   addEventListener('resize', debounce(() => mapa.invalidar(), 150));
 
   aplicar();
+
+  // Secciones de la landing pública (titular, contadores, destacadas, cierre). La versión interna no las tiene.
+  const irAlMapa = (o) => {
+    reiniciarFiltros({ ajustar: false });
+    $('mapa-obras')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    setTimeout(() => abrirObra(o), 500);
+  };
+  if (modo === 'publico') iniciarLanding({ config, datos, verEnMapa: irAlMapa });
+
+  // Enlace directo a una obra (#obra=0023): baja hasta el mapa y abre la tarjeta
   const id = new URLSearchParams(location.hash.slice(1)).get('obra');
   const inicial = id && obras.find((o) => o.id === id && tieneUbicacion(o));
-  if (inicial) setTimeout(() => abrirObra(inicial), 300);
+  if (inicial) { $('mapa-obras')?.scrollIntoView({ block: 'start' }); setTimeout(() => abrirObra(inicial), 300); }
 
   // Ganchos para pruebas automáticas
   window.__slavon = { obras, estado, aplicar, abrirObra, mapa, tarjeta };

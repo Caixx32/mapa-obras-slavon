@@ -97,9 +97,15 @@ export function agruparProvincias(obras) {
 
 export const resolverRuta = (src, base = '') => (/^(https?:)?\/\//.test(src) ? src : base + src);
 
+/** ['Argentina', 'Uruguay'] → «Argentina y Uruguay»; con tres: «A, B y C». Sin datos → «Argentina». */
+export function textoPaises(paises) {
+  const lista = paises?.length ? paises : ['Argentina'];
+  return lista.length > 1 ? `${lista.slice(0, -1).join(', ')} y ${lista.at(-1)}` : lista[0];
+}
+
+export const formatoNumero = (n) => new Intl.NumberFormat('es-AR').format(n);
+
 /** «Más de {N} canchas construidas en {paises}» */
 export function titular(plantilla, meta) {
-  const lista = meta.paises?.length ? meta.paises : ['Argentina'];
-  const paises = lista.length > 1 ? `${lista.slice(0, -1).join(', ')} y ${lista.at(-1)}` : lista[0];
-  return plantilla.replace('{N}', new Intl.NumberFormat('es-AR').format(meta.titular_n)).replace('{paises}', paises);
+  return plantilla.replace('{N}', formatoNumero(meta.titular_n)).replace('{paises}', textoPaises(meta.paises));
 }

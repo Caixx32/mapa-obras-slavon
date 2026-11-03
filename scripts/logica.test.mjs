@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { alternarDeporte, filtrar, partirNombre, referenciaObra, mensajeWhatsApp, urlWhatsApp, agruparProvincias, contarPorDeporte, titular, resolverRuta, tieneUbicacion } from '../public/js/logica.js';
+import { alternarDeporte, filtrar, partirNombre, referenciaObra, mensajeWhatsApp, urlWhatsApp, agruparProvincias, contarPorDeporte, titular, textoPaises, formatoNumero, resolverRuta, tieneUbicacion } from '../public/js/logica.js';
 
 const TODOS = ['padel', 'futbol', 'hockey'];
 const obras = [
@@ -74,4 +74,13 @@ test('titular con país único y con varios', () => {
   assert.equal(titular(t, { titular_n: 1300, paises: ['Argentina'] }), 'Más de 1.300 canchas construidas en Argentina');
   assert.equal(titular(t, { titular_n: 1300, paises: ['Argentina', 'Uruguay'] }), 'Más de 1.300 canchas construidas en Argentina y Uruguay');
   assert.equal(titular(t, { titular_n: 50, paises: ['Argentina', 'Uruguay', 'Chile'] }), 'Más de 50 canchas construidas en Argentina, Uruguay y Chile');
+});
+
+test('texto de países y formato de números es-AR', () => {
+  assert.equal(textoPaises(['Argentina']), 'Argentina');
+  assert.equal(textoPaises(['Argentina', 'Uruguay']), 'Argentina y Uruguay');
+  assert.equal(textoPaises([]), 'Argentina');
+  assert.equal(textoPaises(undefined), 'Argentina');
+  assert.equal(formatoNumero(1320), '1.320');
+  assert.equal(formatoNumero(24), '24');
 });

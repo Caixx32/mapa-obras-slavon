@@ -1,0 +1,14 @@
+{
+  "name": "Mapa de obras · SLAVON Ingeniería Deportiva",
+  "short_name": "Obras SLAVON",
+  "description": "Las canchas que construyó SLAVON, en un mapa.",
+  "lang": "es-AR",
+  "start_url": "./",
+  "display": "browser",
+  "background_color": "#22282C",
+  "theme_color": "#22282C",
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
