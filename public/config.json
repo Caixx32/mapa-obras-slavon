@@ -34,7 +34,9 @@
   "destacadas": {
     "etiqueta": "Obras destacadas",
     "titulo": "Algunas de nuestras obras",
-    "boton": "Ver en el mapa"
+    "boton": "Ver en el mapa",
+    "_ayuda_orden": "Ids de las obras destacadas en el orden en que se muestran (primero la que va primera). Las que no figuren acá van después, de la más nueva a la más vieja. Para sumar una destacada: destacada = si en la planilla, fotos en fotos/<id>-…/ y su id acá.",
+    "orden": ["0647"]
   },
 
   "cierre": {

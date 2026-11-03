@@ -20,6 +20,11 @@ const NOMBRES_PILA = lista(`
   sonia susana tadeo tomas valentin valeria vanesa veronica vicente victor viviana walter yamila yonatan yesica zulema
   nicanor wilfredo ezequiel gaspar lautaro thiago bautista franco gino ismael ivo jonatan kevin leo lisandro lorenzo matheo maximo mateo
   nelida norma olga rita rosa roxana sabrina silvana soledad stella tamara teresa ulises ximena yanina
+  ale nico fede gabi vero cris guille santi facu melisa gladys esther abel ada adela agostina alba amelia anibal antonella araceli belen
+  beatriz bianca candela celeste celia clara cristobal delfina diana dora edgardo elsa emma eva evelyn fanny felix fermin flora gisele
+  griselda haydee hilda ines irene isabel iris jesica joel jonathan josefina juana judith lara leticia lidia liliana lilian lola lucrecia
+  magdalena malena marcia margarita mariela marina martha matilde melina micaela milagros miriam nadia nancy nilda nora octavio ofelia
+  orlando paola paulina rebeca regina renata rosalia ruth samuel sara selena silvio tatiana tobias valentina vilma virginia wanda yolanda
 `);
 const STOP = lista('de del la las el lo los y e en al a con para por the of');
 const SANTO = lista('san santa santo');
@@ -31,15 +36,24 @@ const INSTITUCION = lista(`
   ferroviaria deportivo deportiva atletico nautico agrario sportivo sportsman social recreativo recreo gremio uom
   boca river racing independiente huracan velez lanus banfield quilmes tigre estudiantes belgrano talleres newells central chicago argentinos
   juniors platense defensa justicia colon atlanta ferro almagro temperley sarmiento rivadavia italiano espanol asturiano gallego
-  srl sa sas sac
 `);
 const INSTITUCION_FUERTE = lista('colegio escuela instituto universidad municipalidad municipio country barrio sindicato gremio uom estadio polideportivo cooperativa fundacion mutual circulo anfiteatro tecnopolis sociedad asociacion fomento');
 const DEPORTE = lista(`
   padel paddel padle futbol football fut f5 f7 f11 hockey tenis basquet voley rugby sport sports cancha canchas complejo center arena gol golazo
   gool fc cesped sintetico fitness gym gim training domo stadium eventos multieventos cabanas school day indoor techado techada pelota deportes
-  energy construcciones refineria viviendas gimnasio
+  gimnasio
 `);
 const GENERICAS = new Set([...STOP, ...INSTITUCION, ...DEPORTE]);
+// Palabras que NO identifican a ningún club por sí solas («Complejo Deportivo», «Fútbol 5», «Municipio»). Sin nombres de clubes famosos (Lanús, Boca…).
+const VACIAS = new Set([...STOP, ...lista('padel paddel padle futbol football fut f5 f7 f11 hockey tenis basquet voley rugby cancha canchas complejo cesped sintetico techado techada pelota deportes gimnasio fc club colegio escuela instituto universidad municipalidad municipio country barrio sindicato estadio polideportivo cooperativa asociacion sociedad fundacion mutual circulo centro camping parque plaza anfiteatro deportivo deportiva atletico social recreativo recreo gremio campo predio villa')]);
+const DEPORTE_BASE = lista('futbol football fut padel paddel hockey');
+// Empresas que compraron la cancha pero no son un complejo deportivo: siempre anónimas.
+const EMPRESA = lista('srl sa sas sac construcciones constructora energy inmobiliaria refineria');
+// Nombres que el dueño pidió dejar anónimos (comparados sin tildes ni mayúsculas).
+const ANONIMAS_EXACTAS = new Set(['bolivar padel completa', 'palacios construcciones', 'pose sa tecma sa viviendas u t', 'tecnosolutions srl', 'quintana energy', 'municipio', 'futbol 5', 'complejo deportivo']);
+// Palabras con las que empieza el nombre de una institución: «Pablo Club Atlético…», «Eugenia Municipalidad de…»
+const INSTITUCION_INICIO = lista('club municipalidad municipio instituto barrio colegio escuela country sindicato estadio polideportivo cooperativa fundacion mutual circulo centro camping parque plaza sociedad asociacion universidad');
+const ACENTOS = { atletico: 'atlético', nautico: 'náutico', padel: 'pádel', futbol: 'fútbol', cesped: 'césped', alegria: 'alegría', union: 'unión', asociacion: 'asociación', fundacion: 'fundación', bolivar: 'bolívar', jose: 'josé', maria: 'maría', martin: 'martín', cordoba: 'córdoba', tucuman: 'tucumán', parana: 'paraná', republica: 'república', lopez: 'lópez', gonzalez: 'gonzález', rodriguez: 'rodríguez', fernandez: 'fernández', perez: 'pérez', ramirez: 'ramírez', sintetico: 'sintético', cabanas: 'cabañas', tecnopolis: 'tecnópolis', circulo: 'círculo' };
 
 const PALABRAS_CALLE = /\b(calle|av|avda|avenida|ruta|bv|boulevard|pasaje|pje|diagonal|camino)\b\.?/i;
 const CARGOS = 'presidente|presidenta|director|directora|encargado|encargada|due[ñn]o|due[ñn]a|propietario|propietaria|secretario|secretaria|tesorero|tesorera|gerente|administrador|administradora';
@@ -54,7 +68,7 @@ const esGeneral = (t) => GENERICAS.has(t) || STOP.has(t);
 // ---------------------------------------------------------------- limpiar el nombre que se muestra
 /** Saca direcciones, números de pedido, opciones (Op1, Op2…) y nombres de personas agregados. `ctx` = { ciudad, provincia } (opcional). */
 export function limpiarNombre(nombre, ctx = {}) {
-  let s = String(nombre ?? '').replace(/[¨“”«»]/g, '').replace(/\s+/g, ' ').trim();
+  let s = String(nombre ?? '').replace(/[¨“”«»"]/g, '').replace(/\s+/g, ' ').trim();
   if (!s) return '';
   // «Sergio Cancio. Presidente del Club Agrario Argentino» → «Club Agrario Argentino»
   const cargo = s.match(new RegExp(`[.,;\\-–]\\s*(?:${CARGOS})\\s+(?:del|de la|de los|de las)\\s+(.+)$`, 'i'));
@@ -79,7 +93,39 @@ export function limpiarNombre(nombre, ctx = {}) {
   });
   s = (buenas.length ? buenas : partes.slice(0, 1)).join(' - ');
   s = s.replace(/\bentre\s+.+$/i, '').replace(/^[\s\-–.,;:|]+|[\s\-–.,;:|]+$/g, '').replace(/\s+/g, ' ');
+  return acentuarYMayusculas(quitarNombreDePila(s));
+}
+
+/** «Pablo Club Atlético Susanense» → «Club Atlético Susanense»; «Ale del Instituto Cardenal Newman» → «Instituto Cardenal Newman»; «Alejandro de bardas padel» → «bardas padel». */
+export function quitarNombreDePila(s) {
+  const palabras = s.split(' ');
+  const t = palabras.map((w) => norm(w));
+  if (!NOMBRES_PILA.has(t[0]) || palabras.length < 2) return s;
+  let i = 1;
+  while (i < t.length && i <= 4 && !INSTITUCION_INICIO.has(t[i])) i++;
+  if (i < t.length && i <= 4) return palabras.slice(i).join(' ');
+  const resto = t.slice(2);
+  if (t[1] === 'de' && resto.length >= 2 && !esGeneral(resto[0])) return palabras.slice(2).join(' ');   // «Alejandro de bardas padel»
   return s;
+}
+
+/** Pone tildes a palabras muy comunes («Atletico» → «Atlético») y mayúsculas si el nombre venía todo en minúsculas. */
+export function acentuarYMayusculas(s) {
+  let r = s.replace(/[\p{L}]+/gu, (w) => {
+    const c = ACENTOS[norm(w)];
+    if (!c || w !== w.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) return w;   // ya tiene tilde
+    return w === w.toUpperCase() && w.length > 1 ? c.toUpperCase() : w[0] === w[0].toUpperCase() ? c[0].toUpperCase() + c.slice(1) : c;
+  });
+  if (r && r === r.toLowerCase()) r = r.replace(/[\p{L}]+/gu, (w, i) => (i > 0 && STOP.has(norm(w)) ? w : w[0].toUpperCase() + w.slice(1)));
+  return r;
+}
+
+/** Formato «Nombre de pila + Club/Municipalidad/Instituto/Barrio…» al inicio = una persona que se anotó delante de la institución. */
+export function empiezaConNombreDePila(nombre) {
+  const t = String(nombre ?? '').split(/\s+/).map((w) => norm(w));
+  if (!NOMBRES_PILA.has(t[0])) return false;
+  for (let i = 1; i <= 4 && i < t.length; i++) if (INSTITUCION_INICIO.has(t[i])) return true;
+  return false;
 }
 
 // ---------------------------------------------------------------- ¿parece una persona?
@@ -106,6 +152,7 @@ export function parecePersona(nombre, ctx = {}) {
   const t = toks(s);
   if (/^(cancha|canchas)\s+(de|del)\s+(?!futbol|padel|paddel|pelota|hockey|tenis)/i.test(norm(s))) return true;   // «Cancha de Sandra Tosoni»
   if (/^lo de\s+/.test(norm(s))) return true;                                                                    // «Lo de Pali»
+  if (empiezaConNombreDePila(s)) return true;                                                                    // «Pablo Club Atlético…»
   return evidenciaPersona(t, tokensLugar(ctx));
 }
 
@@ -115,6 +162,12 @@ export function clasificarNombre(o) {
   if (!crudo) return { propuesta: 'anonima', motivo: 'No tiene nombre cargado', limpio: '' };
   const limpio = limpiarNombre(crudo, { ciudad: o.ciudad, provincia: o.provincia });
   if (!limpio) return { propuesta: 'anonima', motivo: 'El nombre era solo una dirección o un número de pedido', limpio: '' };
+  const crudoNorm = norm(crudo);
+  if (ANONIMAS_EXACTAS.has(crudoNorm) || ANONIMAS_EXACTAS.has(norm(limpio))) return { propuesta: 'anonima', motivo: 'Pedido tuyo: se deja anónima', limpio };
+  const todas = norm(limpio).split(' ').filter(Boolean);
+  const sinCupo = todas.filter((x, k) => !(/^(5|6|7|8|9|11)$/.test(x) && DEPORTE_BASE.has(todas[k - 1])));   // «Fútbol 5» es genérico; «Club 77» o «La 10» no
+  if (sinCupo.every((x) => VACIAS.has(x))) return { propuesta: 'anonima', motivo: 'Nombre genérico: no dice de qué club es', limpio };
+  if (todas.some((x) => EMPRESA.has(x))) return { propuesta: 'anonima', motivo: 'Empresa que no es un complejo deportivo', limpio };
   const t = toks(limpio);
   const conInstitucionFuerte = t.some((x) => INSTITUCION_FUERTE.has(x));
 
@@ -133,7 +186,7 @@ export function clasificarNombre(o) {
   }
   const nombrePropio = t.filter(esDesconocida);
   if (/^[^,]+\sy\s[^,]+$/i.test(limpio) && !t.some((x) => GENERICAS.has(x) && !STOP.has(x))) return { propuesta: 'revisar', motivo: 'Parece una esquina o una dirección', limpio };
-  if (t.some((x) => INSTITUCION.has(x) || DEPORTE.has(x))) return { propuesta: 'nombrable', motivo: conInstitucionFuerte ? 'Institución (colegio, estadio, municipio…)' : t.includes('club') ? 'Club' : 'Complejo o empresa con nombre comercial', limpio };
+  if (t.some((x) => INSTITUCION.has(x) || DEPORTE.has(x))) return { propuesta: 'nombrable', motivo: limpio !== String(crudo).trim() ? 'Se limpió el nombre (sin nombre de pila, dirección, pedido u opción)' : conInstitucionFuerte ? 'Institución (colegio, estadio, municipio…)' : t.includes('club') ? 'Club' : 'Complejo o empresa con nombre comercial', limpio };
   if (nombrePropio.length >= 2) return { propuesta: 'revisar', motivo: 'Dos o más palabras sin pistas de qué es: puede ser una persona o una marca', limpio };
   return { propuesta: 'revisar', motivo: 'Una sola palabra sin pistas de qué es: puede ser una persona o una marca', limpio };
 }

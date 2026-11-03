@@ -106,7 +106,10 @@ function tarjetaDestacada(o, config, verEnMapa) {
 function destacadas(config, obras, verEnMapa) {
   const sec = $('destacadas');
   if (!sec) return;
-  const lista = obras.filter((o) => o.destacada).sort((a, b) => (b.anio ?? 0) - (a.anio ?? 0) || a.id.localeCompare(b.id));
+  // Orden: primero los ids que figuran en config.json → destacadas.orden (en ese orden); después el resto, por año (más nuevas primero).
+  const orden = (config.destacadas?.orden ?? []).map(String);
+  const lugar = (o) => { const i = orden.indexOf(o.id); return i === -1 ? orden.length : i; };
+  const lista = obras.filter((o) => o.destacada).sort((a, b) => lugar(a) - lugar(b) || (b.anio ?? 0) - (a.anio ?? 0) || a.id.localeCompare(b.id));
   if (!lista.length) { sec.hidden = true; return; }   // sin obras marcadas como destacadas, la sección no se muestra
   const c = config.destacadas ?? {};
   if (c.etiqueta) $('destacadas-etiqueta').textContent = c.etiqueta;

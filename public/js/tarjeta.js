@@ -101,8 +101,8 @@ function cuerpo(o, ctx) {
   if (o.estado === 'en_obra') c.append(el('span', 'estado-obra en-marcha', 'En obra ahora'));
   const dl = el('dl', 'datos');
   dato(dl, 'Tipo', o.tipo, true);
-  dato(dl, 'Canchas', o.cantidad_canchas);
   dato(dl, 'Año', o.anio);
+  dato(dl, 'Canchas', o.cantidad_canchas);
   c.append(dl);
   if (o.descripcion_corta) c.append(el('p', 'desc', o.descripcion_corta));
 
