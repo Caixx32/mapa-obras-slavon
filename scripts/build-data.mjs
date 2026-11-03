@@ -68,7 +68,8 @@ async function main() {
   const cache = await cargarCache(RUTAS.cacheGeo);
   let geo = { hechas: [], fallidas: [], sinDatos: obras.filter((o) => o.publicar && o.lat === null && (!o.ciudad || !o.provincia)), error: null };
   if (tiene('--sin-red')) {
-    console.log('     (--sin-red: no se consulta Nominatim)');
+    console.log('     (--sin-red: no se consulta Nominatim; se usan las ubicaciones ya guardadas)');
+    geo = await geocodificarFaltantes(obras, cache, { soloCache: true });
   } else {
     geo = await geocodificarFaltantes(obras, cache);
     await guardarCache(RUTAS.cacheGeo, cache);
