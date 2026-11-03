@@ -59,7 +59,8 @@ async function main() {
   }
   // Privacidad: qué obras pueden mostrar el nombre. Manda revisar-nombres.xlsx si existe; si no, el cálculo automático.
   const decisiones = await leerRevisionNombres(RUTAS.revision, normalizarPropuesta);
-  const filasNombres = aplicarPrivacidad(obras, decisiones);
+  const confirmados = new Map(Object.entries(JSON.parse(await fs.readFile(R('scripts', 'data', 'nombres-confirmados.json'), 'utf8'))).filter(([k]) => /^\d{4}$/.test(k)));
+  const filasNombres = aplicarPrivacidad(obras, decisiones, confirmados);
   const cuentaNombres = filasNombres.filter((f) => f.publicar).reduce((a, f) => ({ ...a, [f.propuesta]: (a[f.propuesta] ?? 0) + 1 }), {});
   console.log(`     Nombres: ${cuentaNombres.nombrable ?? 0} con nombre · ${cuentaNombres.anonima ?? 0} anónimas · ${cuentaNombres.revisar ?? 0} a revisar (se publican anónimas)${decisiones.size ? ` · ${decisiones.size} decisiones tuyas leídas` : ''}`);
   const simplificadas = obras.filter((o) => o._ciudad_simplificada);

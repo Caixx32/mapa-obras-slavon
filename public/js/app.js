@@ -1,5 +1,5 @@
 // Orquestador del mapa. Sirve para la versión pública y para la interna (data-modo en <body>).
-import { DEPORTES, alternarDeporte, filtrar, contarPorDeporte, agruparProvincias, tieneUbicacion, filtrosDesdeUrl, consultaDesdeFiltros, obrasCerca, sumarCanchas, formatoNumero, urlWhatsApp } from './logica.js';
+import { DEPORTES, alternarDeporte, filtrar, contarPorDeporte, agruparProvincias, tieneUbicacion, obrasParaEncuadrar, filtrosDesdeUrl, consultaDesdeFiltros, obrasCerca, sumarCanchas, formatoNumero, urlWhatsApp } from './logica.js';
 import { medicion } from './medicion.js';
 import { crearMapa, colorDeporte } from './mapa.js';
 import { crearTarjeta } from './tarjeta.js';
@@ -144,7 +144,7 @@ async function iniciar() {
     const consulta = consultaDesdeFiltros(estado, todosIds);   // los filtros quedan en la URL, para poder compartir la vista
     if (consulta !== location.search) history.replaceState(null, '', location.pathname + consulta + location.hash);
     vacio.hidden = ubicadas > 0;
-    if (ajustar && ubicadas) mapa.ajustar(visibles);
+    if (ajustar && ubicadas) mapa.ajustar(obrasParaEncuadrar(visibles));   // el mapa arranca centrado en Argentina, aunque haya obras en otro país
   }
 
   // ---------------- teclado y tamaño
@@ -153,6 +153,20 @@ async function iniciar() {
 
   aplicar();
   if (vinoFiltrado && modo === 'publico') $('mapa-obras')?.scrollIntoView({ block: 'start' });   // un link filtrado abre directo en el mapa
+
+  // ---------------- ir a un país (Argentina / España): borra los filtros y lleva el mapa hasta ahí
+  const vistas = $('vistas');
+  if (vistas) {
+    vistas.hidden = !obras.some((o) => o.pais === 'España' && tieneUbicacion(o));
+    vistas.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      reiniciarFiltros({ ajustar: false });
+      mapa.quitarUsuario();
+      mapa.ajustar(obras.filter((o) => (o.pais || 'Argentina') === b.dataset.pais));
+      medicion.registrar('filtro_usado', { tipo: 'pais', pais: b.dataset.pais, deporte: 'todos', provincia: 'todas' });
+    });
+  }
 
   // ---------------- compartir esta vista
   const menu = $('compartir-menu');

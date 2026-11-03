@@ -27,6 +27,7 @@
     "padel": "canchas de pádel",
     "cesped": "canchas de césped",
     "provincias": "provincias alcanzadas",
+    "paises": "países",
     "en_marcha": "obras en marcha",
     "nota": "Las cifras cuentan canchas. En el mapa cada punto es una obra, y una obra puede tener varias canchas."
   },
@@ -36,13 +37,19 @@
     "titulo": "Algunas de nuestras obras",
     "boton": "Ver en el mapa",
     "_ayuda_orden": "Ids de las obras destacadas en el orden en que se muestran (primero la que va primera). Las que no figuren acá van después, de la más nueva a la más vieja. Para sumar una destacada: destacada = si en la planilla, fotos en fotos/<id>-…/ y su id acá.",
-    "orden": ["0647"]
+    "orden": ["0651", "0647", "0632", "0631", "1236", "0274"]
   },
 
   "cierre": {
     "etiqueta": "Cómo trabajamos",
     "titulo": "Contanos qué cancha querés",
     "boton": "Escribinos por WhatsApp"
+  },
+
+  "confiaron": {
+    "_ayuda": "Franja entre los contadores y el mapa. Solo texto (sin logos de terceros). Dejá la lista vacía para ocultarla.",
+    "etiqueta": "Confiaron en nosotros",
+    "nombres": ["Boca Juniors", "Argentinos Juniors", "CONMEBOL", "Huracán", "La Rural", "Tecnópolis", "Megatlon", "Universitat de les Illes Balears"]
   },
 
   "pilares": [

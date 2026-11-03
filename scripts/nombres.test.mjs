@@ -118,3 +118,18 @@ test('anónimas pedidas: empresas y nombres genéricos', () => {
     assert.equal(clasificarNombre(obra({ nombre_club: n })).propuesta, 'nombrable', n);   // llevan un nombre propio: no son genéricas
   }
 });
+
+test('nombres confirmados por el dueño: se muestran con el nombre exacto, aunque el cálculo automático dijera otra cosa', () => {
+  const o = obra({ id: '0651', nombre_club: 'Estadio Alberto J. Armando', ciudad: 'Buenos Aires', provincia: 'CABA' });
+  const o2 = obra({ id: '0631', nombre_club: 'Anfiteatro "Presidente Arturo Umberto Illia" - CONMEBOL' });
+  const o3 = obra({ id: '1229', nombre_club: 'Megatlon', ciudad: null, provincia: null });
+  const conf = new Map([['0651', 'Estadio Alberto J. Armando (Boca Juniors)'], ['0631', 'Anfiteatro CONMEBOL'], ['1229', 'Megatlon – Vicente López']]);
+  aplicarPrivacidad([o, o2, o3], new Map([['0631', 'anonima']]), conf);   // la confirmación manda también sobre revisar-nombres.xlsx
+  assert.deepEqual([o.nombrable, o2.nombrable, o3.nombrable], [true, true, true]);
+  assert.equal(registroPublico(o).reg.nombre_club, 'Estadio Alberto J. Armando (Boca Juniors)');
+  assert.equal(registroPublico(o2).reg.nombre_club, 'Anfiteatro CONMEBOL');
+  assert.equal(registroPublico(o3).reg.nombre_club, 'Megatlon – Vicente López');
+  const sin = obra({ id: '0651', nombre_club: 'Estadio Alberto J. Armando' });
+  aplicarPrivacidad([sin]);
+  assert.equal(sin.nombrable, false, 'sin confirmación, un estadio con nombre de persona queda a revisar');
+});

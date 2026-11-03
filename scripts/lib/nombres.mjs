@@ -205,7 +205,7 @@ export const normalizarPropuesta = (v) => {
  * `decisiones` = Map id → propuesta, de revisar-nombres.xlsx (lo que corrigió una persona manda sobre el cálculo automático).
  * Una obra destacada elegida por el equipo se propone como nombrable, salvo que parezca una persona.
  */
-export function aplicarPrivacidad(obras, decisiones = new Map()) {
+export function aplicarPrivacidad(obras, decisiones = new Map(), confirmados = new Map()) {
   const filas = [];
   for (const o of obras) {
     const auto = clasificarNombre(o);
@@ -215,15 +215,22 @@ export function aplicarPrivacidad(obras, decisiones = new Map()) {
       motivo = 'Destacada: la elegiste vos para mostrar con nombre';
     }
     const manual = decisiones.get(o.id);
+    const confirmado = confirmados.get(o.id);
     const decidida = manual && manual !== propuesta ? manual : null;
     if (manual) { propuesta = manual; if (decidida) motivo = 'Decidido por vos en revisar-nombres.xlsx'; }
     if (propuesta === 'nombrable' && auto.limpio && parecePersona(auto.limpio, o) && !toks(auto.limpio).some((x) => INSTITUCION_FUERTE.has(x))) {
       propuesta = 'anonima';   // aunque alguien lo marque como nombrable, una persona física nunca se muestra
       motivo = 'Bloqueada por privacidad: parece nombre de una persona';
     }
-    o.nombrable = propuesta === 'nombrable' && Boolean(auto.limpio);
-    o.nombre_publico = o.nombrable ? auto.limpio : null;
-    filas.push({ id: o.id, publicar: o.publicar, nombre: o.nombre_club ?? '', limpio: auto.limpio, ciudad: o.ciudad ?? '', provincia: o.provincia ?? '', deporte: o.deporte, cliente: o.cliente_interno ?? '', propuesta, motivo, manual: Boolean(manual) });
+    let limpio = auto.limpio;
+    if (confirmado) {   // el dueño confirmó que se puede nombrar, con este nombre: manda sobre todo lo demás
+      propuesta = 'nombrable';
+      motivo = 'Confirmado por el dueño (nombre exacto)';
+      limpio = confirmado;
+    }
+    o.nombrable = propuesta === 'nombrable' && Boolean(limpio);
+    o.nombre_publico = o.nombrable ? limpio : null;
+    filas.push({ id: o.id, publicar: o.publicar, nombre: o.nombre_club ?? '', limpio: o.nombrable ? limpio : auto.limpio, ciudad: o.ciudad ?? '', provincia: o.provincia ?? '', deporte: o.deporte, cliente: o.cliente_interno ?? '', propuesta, motivo, manual: Boolean(manual) });
   }
   return filas;
 }

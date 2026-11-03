@@ -172,3 +172,8 @@ h1, h2, h3 { margin: 0; font-weight: 800; text-transform: uppercase; line-height
   .desc { display: none; }   /* la descripción larga queda para escritorio: en el celular va primero el botón */
   .cta { position: static; padding: 10px 16px 14px; background: none; }
 }
+
+/* Ir a un país (Argentina / España) */
+.vistas { display: contents; }
+.vistas[hidden] { display: none; }
+.bandera { width: 20px; height: 14px; flex: none; border-radius: 2px; box-shadow: 0 0 0 1px rgba(34, 40, 44, 0.25); }
