@@ -149,6 +149,15 @@ Las etiquetas Open Graph de `public/index.html` y la imagen `public/img/og.png` 
 La imagen se arma desde `scripts/og/og.html` (abrirla en el navegador a 1200×630 y sacar una captura). Las URLs de `og:url`, `og:image` y
 `canonical` apuntan a `https://caixx32.github.io/mapa-obras-slavon/`: si el sitio termina en otra dirección (por ejemplo un dominio propio), hay que cambiarlas ahí.
 
+## Mapa de fondo
+
+Se usa el mapa de **OpenStreetMap** (gratis, sin clave ni registro) con un filtro gris (`mapa.filtro` en `public/config.json`) para que los pines de colores resalten.
+Los créditos «© OpenStreetMap contributors» tienen que quedar visibles en el mapa (ya lo están).
+El servidor de mapas de OpenStreetMap es para uso razonable ([política de uso](https://operations.osmfoundation.org/policies/tiles/)) y no tiene garantía de servicio:
+para una web con mucho tráfico conviene un proveedor con plan propio (CARTO, MapTiler, Stadia, etc.). Para cambiarlo alcanza con editar `tiles`, `atribucion` y `filtro`
+en la sección `mapa` de `config.json`; no hay que tocar código. (CARTO dejó de servir su mapa sin clave de API, por eso no se usa por defecto.)
+Si el mapa de fondo no carga, aparece un aviso y las obras se siguen viendo.
+
 ## Librerías del mapa
 
 Leaflet, Leaflet.markercluster y Montserrat están copiadas en `public/vendor/` y `public/fonts/` (no se usan CDNs).

@@ -24,10 +24,15 @@ function iconoCluster(cluster) {
 
 /** @param opciones { tiles, atribucion, alSeleccionar(obra), alDeseleccionar() } */
 export function crearMapa(contenedor, opciones) {
-  const map = L.map(contenedor, { zoomControl: false, attributionControl: false, minZoom: 3, maxZoom: 18, zoomSnap: 0.5, zoomDelta: 1 }).setView(ARGENTINA, 4.5);
+  const map = L.map(contenedor, { zoomControl: false, attributionControl: false, minZoom: 3, maxZoom: 19, zoomSnap: 0.5, zoomDelta: 1 }).setView(ARGENTINA, 4.5);
   L.control.zoom({ position: 'topright', zoomInTitle: 'Acercar', zoomOutTitle: 'Alejar' }).addTo(map);
   L.control.attribution({ prefix: false, position: 'bottomleft' }).addAttribution(opciones.atribucion).addTo(map);
-  L.tileLayer(opciones.tiles, { subdomains: 'abcd', maxZoom: 20, maxNativeZoom: 20, detectRetina: false }).addTo(map);
+  const base = L.tileLayer(opciones.tiles, { subdomains: opciones.subdominios || 'abc', maxZoom: 19, maxNativeZoom: opciones.zoomNativoMaximo || 19, detectRetina: false }).addTo(map);
+  if (opciones.filtro) map.getPane('tilePane').style.filter = opciones.filtro;   // solo el mapa de fondo, no los pines
+  let tilesOk = 0;
+  let tilesError = 0;
+  base.on('tileload', () => { tilesOk++; });
+  base.on('tileerror', () => { tilesError++; if (tilesError >= 6 && tilesOk === 0) opciones.alFallarMapaBase?.(); });
 
   const grupo = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 46, spiderfyOnMaxZoom: true, chunkedLoading: true, iconCreateFunction: iconoCluster }).addTo(map);
   const marcadores = new Map(); // id → marker

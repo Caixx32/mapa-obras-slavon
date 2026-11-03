@@ -8,8 +8,9 @@ const modo = document.body.dataset.modo === 'interno' ? 'interno' : 'publico';
 const baseSitio = document.body.dataset.base ?? '';                 // dónde está public/ respecto de esta página
 const baseFotos = modo === 'interno' ? '../' : '';                  // las fotos del JSON interno son relativas a la raíz del repo
 const URL_DATOS = modo === 'interno' ? '../data/obras-internas.json' : 'data/obras-publicas.json';
-const TILES = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-const ATRIBUCION = '© OpenStreetMap · © CARTO';
+const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const ATRIBUCION = '© OpenStreetMap contributors';
+const FILTRO_MAPA = 'grayscale(1) contrast(0.9) brightness(1.08)';
 
 const $ = (id) => document.getElementById(id);
 const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
@@ -48,6 +49,10 @@ async function iniciar() {
   const mapa = crearMapa($('mapa'), {
     tiles: config.mapa?.tiles || TILES,
     atribucion: config.mapa?.atribucion || ATRIBUCION,
+    subdominios: config.mapa?.subdominios,
+    zoomNativoMaximo: config.mapa?.zoom_nativo_maximo,
+    filtro: config.mapa ? config.mapa.filtro : FILTRO_MAPA,
+    alFallarMapaBase: () => { const av = $('aviso-mapa'); if (av) av.hidden = false; },
     alSeleccionar: abrirObra,
     alDeseleccionar: () => tarjeta.cerrar(),
   });
