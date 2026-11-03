@@ -102,3 +102,18 @@ test('ciudades: se quitan los prefijos administrativos sin tocar los nombres rea
   assert.equal(simplificarCiudad('Municipio'), 'Municipio', 'si no queda nada, se conserva');
   assert.equal(simplificarCiudad(null), null);
 });
+
+test('geocodificarFaltantes con soloCache usa lo guardado y no consulta nada', async () => {
+  const { geocodificarFaltantes } = await import('./lib/coords.mjs');
+  const mk = (id, ciudad) => ({ id, publicar: true, lat: null, lng: null, ciudad, provincia: 'Córdoba', pais: 'Argentina' });
+  const obras = [mk('1', 'Río Cuarto'), mk('2', 'Villa Nueva')];
+  const cache = { 'rio cuarto|cordoba|Argentina': { lat: -33.13, lng: -64.35, display: 'Río Cuarto' } };
+  const fetchFn = () => { throw new Error('no debería consultar la red'); };
+  const r = await geocodificarFaltantes(obras, cache, { soloCache: true, fetchFn });
+  assert.equal(r.hechas.length, 1);
+  assert.equal(obras[0].lat, -33.13);
+  assert.equal(obras[0].origen_coord, 'aprox');
+  assert.equal(obras[1].lat, null);
+  assert.equal(r.fallidas.length, 0);
+  assert.equal(r.error, null);
+});

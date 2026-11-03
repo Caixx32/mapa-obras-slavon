@@ -112,7 +112,7 @@ export async function geocodificarFaltantes(obras, cache, opciones = {}) {
     }
     const clave = `${norm(o.ciudad)}|${norm(o.provincia)}|${o.pais}`;
     if (!(clave in cache)) {
-      if (error) continue;
+      if (error || opciones.soloCache) continue;   // soloCache (--sin-red): se usan las ubicaciones ya guardadas, sin consultar nada
       try {
         cache[clave] = await geocodificar(o.ciudad, o.provincia, o.pais, opciones);
       } catch (e) {

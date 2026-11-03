@@ -36,9 +36,16 @@ jobs:
 
       - uses: actions/configure-pages@v5
 
+      # Copia de public/ con los CSS y JS marcados con la versión de esta publicación (?v=…):
+      # así el navegador nunca mezcla un HTML nuevo con estilos o scripts viejos que tenía guardados.
+      - name: Marcar los archivos con la versión
+        run: |
+          cp -r public _sitio
+          node scripts/versionar.mjs _sitio "${{ github.sha }}"
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: public
+          path: _sitio
 
       - id: deployment
         uses: actions/deploy-pages@v4
