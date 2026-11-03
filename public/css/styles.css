@@ -156,3 +156,19 @@ h1, h2, h3 { margin: 0; font-weight: 800; text-transform: uppercase; line-height
   .slv-pin.en-obra .p::after { animation: none; opacity: 0.5; transform: scale(1.05); }
   .estado-obra.en-marcha::before { animation: none; }
 }
+
+/* Celular: tarjeta compacta para ver todo SIN scrollear: nombre, ciudad y provincia, tipo, año, canchas y el botón. */
+@media (max-width: 899px) {
+  .tarjeta { max-height: min(88%, 470px); }
+  .carrusel-slide { aspect-ratio: 3.4 / 1; }
+  .cuerpo { padding: 12px 16px 2px; }
+  .cuerpo h2 { margin-top: 6px; font-size: 1.12rem; line-height: 1.12; }
+  .cuerpo .lugar { margin-top: 3px; font-size: 0.86rem; }
+  .estado-obra { margin-top: 8px; }
+  .datos { grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px 16px; margin-top: 10px; }
+  .datos .ancho { grid-column: auto; }
+  .datos dd { font-size: 0.88rem; }
+  .datos .ancho dd { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  .desc { display: none; }   /* la descripción larga queda para escritorio: en el celular va primero el botón */
+  .cta { position: static; padding: 10px 16px 14px; background: none; }
+}

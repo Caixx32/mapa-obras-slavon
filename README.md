@@ -166,6 +166,9 @@ abajo de a 50, para que nunca supere el total real. Si hay obras en Uruguay, el 
 Marcá `destacada = si` en la planilla y corré `build-data`: esas obras aparecen en una grilla con foto grande y un botón «Ver en el mapa».
 Si no hay ninguna marcada, la sección no se muestra. Conviene que tengan foto (si no, se ve la imagen genérica del deporte).
 
+**Orden:** en `public/config.json` → `destacadas.orden` van los ids en el orden en que se muestran (hoy primero `0647`, Club Huracán – La Quemita). Las que no figuren ahí van después, de la más nueva a la más vieja.
+**Para sumar una destacada:** (1) `destacada = si` en la planilla, (2) sus fotos en `fotos/<id>-…/`, (3) su id en `orden`, (4) `npm run build-data` y publicar. La grilla acepta cualquier cantidad de obras.
+
 ## Al compartir el link (WhatsApp, redes)
 
 Las etiquetas Open Graph de `public/index.html` y la imagen `public/img/og.png` hacen que el link se vea con título, descripción e imagen.
