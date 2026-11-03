@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { estadoAProvincia, geocodificar, geocodificarFaltantes, leerKml, completarDesdeKml } from './lib/coords.mjs';
-import { normalizarFila } from './lib/master.mjs';
+import { normalizarFila, simplificarCiudad } from './lib/master.mjs';
 
 test('CABA y la provincia de Buenos Aires no se confunden', () => {
   assert.equal(estadoAProvincia('Ciudad Autónoma de Buenos Aires'), 'CABA');
@@ -89,4 +89,16 @@ test('planilla: lectura tolerante de valores y validaciones', () => {
   assert.ok(avisos.some((a) => /https/.test(a)));
   assert.match(normalizarFila({ id: '1', deporte: 'golf' }, 2).error, /deporte/);
   assert.equal(normalizarFila({ id: '1', deporte: 'otro', lat: '-30' }, 2).obra.lat, null, 'una sola coordenada se ignora');
+});
+
+test('ciudades: se quitan los prefijos administrativos sin tocar los nombres reales', () => {
+  assert.equal(simplificarCiudad('Municipio de Posadas'), 'Posadas');
+  assert.equal(simplificarCiudad('Partido de Almirante Brown'), 'Almirante Brown');
+  assert.equal(simplificarCiudad('Departamento de Copo'), 'Copo');
+  assert.equal(simplificarCiudad('Distrito Ciudad de General Alvear'), 'General Alvear');
+  assert.equal(simplificarCiudad('Comisión Municipal de Los Pirpintos'), 'Los Pirpintos');
+  assert.equal(simplificarCiudad('Aeropuerto Internacional Ezeiza'), 'Ezeiza');
+  assert.equal(simplificarCiudad('San Miguel de Tucumán'), 'San Miguel de Tucumán');
+  assert.equal(simplificarCiudad('Municipio'), 'Municipio', 'si no queda nada, se conserva');
+  assert.equal(simplificarCiudad(null), null);
 });

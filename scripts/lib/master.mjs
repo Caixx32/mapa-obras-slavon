@@ -27,6 +27,15 @@ export function textoOrNull(v) {
   return x === null ? null : String(x);
 }
 
+/** «Municipio de Posadas» → «Posadas», «Partido de Almirante Brown» → «Almirante Brown», «Aeropuerto Internacional Ezeiza» → «Ezeiza». */
+export function simplificarCiudad(ciudad) {
+  if (!ciudad) return ciudad;
+  const limpia = ciudad
+    .replace(/^(municipio|partido|departamento|distrito ciudad|distrito|comisi[oó]n municipal|aeropuerto internacional)\s+(de\s+|del\s+)?/i, '')
+    .trim();
+  return limpia ? limpia.charAt(0).toUpperCase() + limpia.slice(1) : ciudad;
+}
+
 /** Convierte una fila cruda de la planilla en una obra validada. Devuelve { obra, avisos, error }. */
 export function normalizarFila(raw, nFila) {
   const avisos = [];
@@ -71,6 +80,8 @@ export function normalizarFila(raw, nFila) {
     avisos.push(`obra ${id}: la ciudad «${ciudad}» tenía una coma; se usó «${primera}»`);
     ciudad = primera || null;
   }
+  const ciudadOriginal = ciudad;
+  ciudad = simplificarCiudad(ciudad);
 
   return {
     avisos,
@@ -82,6 +93,7 @@ export function normalizarFila(raw, nFila) {
       cantidad_canchas: canchas,
       provincia: textoOrNull(raw.provincia),
       ciudad,
+      _ciudad_simplificada: ciudad !== ciudadOriginal ? ciudadOriginal : null,
       pais: textoOrNull(raw.pais) || 'Argentina',
       lat,
       lng,

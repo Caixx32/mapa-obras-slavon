@@ -52,6 +52,11 @@ async function main() {
   if (errores.length) {
     throw new Error(`La planilla tiene ${errores.length} error(es) que hay que corregir:\n` + errores.slice(0, 25).map((e) => '  - ' + e).join('\n'));
   }
+  const simplificadas = obras.filter((o) => o._ciudad_simplificada);
+  if (simplificadas.length) {
+    const ej = simplificadas.slice(0, 2).map((o) => `«${o._ciudad_simplificada}» → «${o.ciudad}»`).join(', ');
+    avisos.push(`${simplificadas.length} nombres de ciudad se simplificaron (ej. ${ej})`);
+  }
   const publicables = obras.filter((o) => o.publicar);
   console.log(`     ${obras.length} obras (${publicables.length} publicables)`);
 
