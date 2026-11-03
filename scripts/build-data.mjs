@@ -10,7 +10,8 @@ import { leerMaestra } from './lib/master.mjs';
 import { construirPublico, construirInterno } from './lib/publico.mjs';
 import { crearCarpetas, procesarFotos } from './lib/fotos.mjs';
 import { leerKml, completarDesdeKml, geocodificarFaltantes, cargarCache, guardarCache } from './lib/coords.mjs';
-import { escribirFotosPendientes, escribirCoordenadasAprox, escribirSinUbicar, escribirSinProvincia } from './lib/reportes.mjs';
+import { escribirFotosPendientes, escribirCoordenadasAprox, escribirSinUbicar, escribirSinProvincia, escribirRevisarNombres, leerRevisionNombres } from './lib/reportes.mjs';
+import { aplicarPrivacidad, normalizarPropuesta } from './lib/nombres.mjs';
 
 const args = process.argv.slice(2);
 const tiene = (f) => args.includes(f);
@@ -29,6 +30,8 @@ const RUTAS = {
   aprox: R('reportes', 'coordenadas-aprox.xlsx'),
   sinUbicar: R('reportes', 'sin-ubicar.xlsx'),
   sinProvincia: R('reportes', 'sin-provincia.xlsx'),
+  revision: R('revisar-nombres.xlsx'),            // la copia corregida por una persona (no se sube a GitHub)
+  revisarNombres: R('reportes', 'revisar-nombres.xlsx'),
   avisos: R('reportes', 'avisos.txt'),
 };
 
@@ -54,6 +57,11 @@ async function main() {
   if (errores.length) {
     throw new Error(`La planilla tiene ${errores.length} error(es) que hay que corregir:\n` + errores.slice(0, 25).map((e) => '  - ' + e).join('\n'));
   }
+  // Privacidad: qué obras pueden mostrar el nombre. Manda revisar-nombres.xlsx si existe; si no, el cálculo automático.
+  const decisiones = await leerRevisionNombres(RUTAS.revision, normalizarPropuesta);
+  const filasNombres = aplicarPrivacidad(obras, decisiones);
+  const cuentaNombres = filasNombres.filter((f) => f.publicar).reduce((a, f) => ({ ...a, [f.propuesta]: (a[f.propuesta] ?? 0) + 1 }), {});
+  console.log(`     Nombres: ${cuentaNombres.nombrable ?? 0} con nombre · ${cuentaNombres.anonima ?? 0} anónimas · ${cuentaNombres.revisar ?? 0} a revisar (se publican anónimas)${decisiones.size ? ` · ${decisiones.size} decisiones tuyas leídas` : ''}`);
   const simplificadas = obras.filter((o) => o._ciudad_simplificada);
   if (simplificadas.length) {
     const ej = simplificadas.slice(0, 2).map((o) => `«${o._ciudad_simplificada}» → «${o.ciudad}»`).join(', ');
@@ -105,6 +113,7 @@ async function main() {
   console.log('5/5  Reportes…');
   const nPend = await escribirFotosPendientes(RUTAS.fotosPendientes, obras, fotos.publicas, fotos.internas);
   const rep = await escribirCoordenadasAprox(RUTAS.aprox, obras, geo.hechas, geo.fallidas);
+  await escribirRevisarNombres(RUTAS.revisarNombres, filasNombres);
   const nSinUbicar = await escribirSinUbicar(RUTAS.sinUbicar, obras, geo.fallidas);
   const nSinProvincia = await escribirSinProvincia(RUTAS.sinProvincia, obras);
   await fs.mkdir(path.dirname(RUTAS.avisos), { recursive: true });

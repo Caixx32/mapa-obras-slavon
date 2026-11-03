@@ -23,10 +23,11 @@ test('obra no nombrable: nombre genérico, coordenadas redondeadas y sin campos 
   for (const prohibido of ['Los Pinos', 'Juan Carlos', 'Siempreviva', 'B:FEDE', 'fuente', 'cliente_interno']) assert.ok(!txt.includes(prohibido), prohibido);
 });
 
-test('obra nombrable: muestra el club y las coordenadas exactas', () => {
+test('obra nombrable: muestra el club pero con coordenadas redondeadas (como todas)', () => {
   const { reg } = registroPublico(obra({ nombrable: true }));
   assert.equal(reg.nombre_club, 'Club Los Pinos');
-  assert.equal(reg.lat, -31.29567);
+  assert.equal(reg.lat, -31.3);
+  assert.equal(reg.lng, -64.29);
   assert.equal(reg.nombrable, true);
 });
 

@@ -70,11 +70,21 @@ Lo mínimo para que aparezca: `id`, `deporte`, `provincia` y `ciudad`. El resto 
 `descripcion_corta` y `nombre_club`. Las coordenadas (`lat` y `lng`) también son opcionales: si faltan, `build-data` ubica la obra por
 ciudad + provincia (queda marcada `aprox` en `reportes/coordenadas-aprox.xlsx`); si querés el punto exacto, copiá la latitud y longitud.
 
-### Mostrar el nombre del club
+### Mostrar el nombre del club (privacidad)
 
-Por defecto todas las obras se ven como «Complejo de fútbol – Ciudad, Provincia». Para mostrar el nombre real de un club:
-completá `nombre_club` y poné `nombrable = si` (con el permiso del cliente). Con `nombrable = si` también se muestra la ubicación exacta.
-En Excel conviene filtrar la columna `falta_nombre_club = no` para ver cuáles ya tienen nombre cargado.
+**Una persona física nunca se muestra**, aunque el nombre diga «Club» o «Cancha de» (ej.: «Cancha de Sandra Tosoni», «Maico Girardi»). Solo pueden mostrar el nombre: clubes, complejos comerciales, colegios, countries/barrios, municipios, sindicatos, estadios y empresas con nombre comercial. Las demás se ven como «Complejo de fútbol – Ciudad, Provincia».
+
+`npm run build-data` propone una de tres cosas para **cada** obra y la deja en `reportes/revisar-nombres.xlsx`:
+
+- `nombrable`: se muestra el nombre.
+- `anonima`: no se muestra (persona, sin nombre, solo una dirección).
+- `revisar`: no estoy seguro; **mientras tanto se publica como anónima**.
+
+Para corregir: abrí ese Excel, cambiá la columna **propuesta** (hay una lista desplegable), guardalo como `revisar-nombres.xlsx` en la carpeta del proyecto (junto a `obras-maestra.xlsx`; no se sube a GitHub) y corré `npm run build-data`. Lo que vos decidas manda sobre el cálculo automático, salvo que sea una persona física (queda bloqueada y el reporte lo dice). La columna `nombrable` de la planilla maestra **ya no se usa**.
+
+Al mostrar, el nombre se limpia solo: se sacan direcciones («Calle 31 nº 753 – Club X» → «Club X»), números de pedido, opciones (Op1, Op2) y nombres de personas agregados («Sergio Cancio. Presidente del Club Agrario Argentino» → «Club Agrario Argentino»).
+
+**Coordenadas:** en la versión pública van **todas** redondeadas a 2 decimales (≈1 km), tengan nombre o no. Las exactas solo existen en la versión interna. Hay tests que fallan si el JSON público tiene más decimales o un nombre que parezca de una persona.
 
 ## Cargar fotos
 
