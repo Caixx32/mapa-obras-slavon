@@ -1,5 +1,6 @@
 // Orquestador del mapa. Sirve para la versión pública y para la interna (data-modo en <body>).
-import { DEPORTES, alternarDeporte, filtrar, contarPorDeporte, agruparProvincias, tieneUbicacion } from './logica.js';
+import { DEPORTES, alternarDeporte, filtrar, contarPorDeporte, agruparProvincias, tieneUbicacion, filtrosDesdeUrl, consultaDesdeFiltros, obrasCerca, sumarCanchas, formatoNumero, urlWhatsApp } from './logica.js';
+import { medicion } from './medicion.js';
 import { crearMapa, colorDeporte } from './mapa.js';
 import { crearTarjeta } from './tarjeta.js';
 import { iniciarLanding } from './landing.js';
@@ -37,6 +38,7 @@ async function iniciar() {
     cargarJson(URL_DATOS),
   ]);
   aplicarColores(config.colores);
+  medicion.iniciar(config);
   if (!config.whatsapp && ['localhost', '127.0.0.1'].includes(location.hostname)) {
     console.warn('[SLAVON] Falta el número de WhatsApp en public/config.json: los botones abren WhatsApp sin destinatario.');
   }
@@ -45,6 +47,8 @@ async function iniciar() {
   const estado = { deportes: null, provincia: '', texto: '' };
 
   const contexto = { config, modo, base: baseFotos, baseSitio };
+  let obraAbierta = null;
+  const filtroTexto = () => ({ deporte: estado.deportes ? [...estado.deportes].join(',') : 'todos', provincia: estado.provincia.split('|')[1] ?? 'todas' });
   const tarjeta = crearTarjeta($('tarjeta'), contexto);
   const mapa = crearMapa($('mapa'), {
     tiles: config.mapa?.tiles || TILES,
@@ -59,12 +63,14 @@ async function iniciar() {
   const esEscritorio = matchMedia('(min-width: 900px)');
 
   function abrirObra(o) {
+    obraAbierta = o;
     tarjeta.abrir(o);
     document.body.classList.add('tarjeta-abierta');
     history.replaceState(null, '', `#obra=${o.id}`);
     requestAnimationFrame(() => mapa.mostrarObra(o, { desplazarY: esEscritorio.matches ? 0 : Math.round(tarjeta.altoPanel() / 2) }));
   }
   tarjeta.alCerrar(() => {
+    obraAbierta = null;
     document.body.classList.remove('tarjeta-abierta');
     mapa.desmarcar();
     if (location.hash.startsWith('#obra=')) history.replaceState(null, '', location.pathname + location.search);
@@ -89,6 +95,7 @@ async function iniciar() {
     if (!b) return;
     estado.deportes = b.dataset.dep === 'todos' ? null : alternarDeporte(estado.deportes, b.dataset.dep, todosIds);
     aplicar();
+    medicion.registrar('filtro_usado', { tipo: 'deporte', ...filtroTexto() });
   });
 
   // ---------------- provincia
@@ -100,7 +107,14 @@ async function iniciar() {
     for (const p of g.provincias) padre.append(new Option(`${p.nombre} (${p.n})`, p.valor));
     if (padre !== sel) sel.append(padre);
   }
-  sel.addEventListener('change', () => { estado.provincia = sel.value; aplicar(); });
+  sel.addEventListener('change', () => { estado.provincia = sel.value; aplicar(); medicion.registrar('filtro_usado', { tipo: 'provincia', ...filtroTexto() }); });
+
+  // Filtros que vienen en el link (?deporte=padel&provincia=cordoba): se cargan antes de dibujar el mapa.
+  const delLink = filtrosDesdeUrl(location.search, { deportesValidos: todosIds, provincias: grupos.flatMap((g) => g.provincias) });
+  estado.deportes = delLink.deportes;
+  estado.provincia = delLink.provincia;
+  sel.value = estado.provincia;
+  const vinoFiltrado = Boolean(estado.deportes || estado.provincia);
 
   // ---------------- búsqueda (solo versión interna)
   const buscador = $('buscador');
@@ -125,7 +139,10 @@ async function iniciar() {
       b.setAttribute('aria-pressed', String(id === 'todos' ? estado.deportes === null : Boolean(estado.deportes?.has(id))));
       b.querySelector('.n').textContent = String(id === 'todos' ? base.length : conteos.get(id) ?? 0);
     }
-    $('conteo').textContent = `${ubicadas} ${ubicadas === 1 ? 'obra' : 'obras'} en el mapa`;
+    const canchas = sumarCanchas(visibles.filter(tieneUbicacion));
+    $('conteo').textContent = `${formatoNumero(ubicadas)} ${ubicadas === 1 ? 'obra' : 'obras'} en el mapa · ${formatoNumero(canchas)} ${canchas === 1 ? 'cancha' : 'canchas'}`;
+    const consulta = consultaDesdeFiltros(estado, todosIds);   // los filtros quedan en la URL, para poder compartir la vista
+    if (consulta !== location.search) history.replaceState(null, '', location.pathname + consulta + location.hash);
     vacio.hidden = ubicadas > 0;
     if (ajustar && ubicadas) mapa.ajustar(visibles);
   }
@@ -135,6 +152,100 @@ async function iniciar() {
   addEventListener('resize', debounce(() => mapa.invalidar(), 150));
 
   aplicar();
+  if (vinoFiltrado && modo === 'publico') $('mapa-obras')?.scrollIntoView({ block: 'start' });   // un link filtrado abre directo en el mapa
+
+  // ---------------- compartir esta vista
+  const menu = $('compartir-menu');
+  const btnCompartir = $('btn-compartir');
+  const cerrarMenu = () => { if (menu) { menu.hidden = true; btnCompartir.setAttribute('aria-expanded', 'false'); } };
+  if (btnCompartir && menu) {
+    btnCompartir.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const abrir = menu.hidden;
+      menu.hidden = !abrir;
+      btnCompartir.setAttribute('aria-expanded', String(abrir));
+      if (abrir) $('compartir-wa').href = urlWhatsApp('', `Mirá las obras de SLAVON en el mapa: ${location.href}`);
+    });
+    document.addEventListener('click', (e) => { if (!menu.contains(e.target)) cerrarMenu(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarMenu(); });
+    $('compartir-wa').addEventListener('click', () => { medicion.registrar('compartir', { metodo: 'whatsapp', ...filtroTexto() }); cerrarMenu(); });
+    $('compartir-copiar').addEventListener('click', async () => {
+      let ok = false;
+      try { await navigator.clipboard.writeText(location.href); ok = true; } catch { /* sin permiso: probamos el método viejo */ }
+      if (!ok) {
+        const t = Object.assign(document.createElement('textarea'), { value: location.href });
+        t.style.cssText = 'position:fixed;opacity:0';
+        document.body.append(t);
+        t.select();
+        try { ok = document.execCommand('copy'); } catch { /* nada */ }
+        t.remove();
+      }
+      const b = $('compartir-copiar');
+      b.textContent = ok ? '¡Link copiado!' : 'No se pudo copiar';
+      medicion.registrar('compartir', { metodo: 'copiar', ...filtroTexto() });
+      setTimeout(() => { b.textContent = 'Copiar link'; cerrarMenu(); }, 1400);
+    });
+  }
+
+  // ---------------- obras cerca tuyo (la ubicación se usa solo en el navegador: no se guarda ni se envía)
+  const btnCerca = $('btn-cerca');
+  const msg = $('mensaje-cerca');
+  const decir = (texto, { elegirProvincia = false, nota = '' } = {}) => {
+    msg.replaceChildren(document.createTextNode(texto));
+    if (elegirProvincia) {
+      const s = sel.cloneNode(true);
+      s.id = 'provincia-cerca';
+      s.addEventListener('change', () => { sel.value = s.value; sel.dispatchEvent(new Event('change')); });
+      msg.append(s);
+    }
+    if (nota) msg.append(Object.assign(document.createElement('small'), { textContent: nota }));
+    msg.hidden = false;
+  };
+  const sinUbicacion = () => {
+    btnCerca.removeAttribute('aria-busy');
+    decir('No pudimos ver tu ubicación. Elegí tu provincia:', { elegirProvincia: true });
+    medicion.registrar('cerca_tuyo', { resultado: 'sin_permiso', cantidad: 0 });
+  };
+  if (btnCerca && msg) {
+    btnCerca.addEventListener('click', () => {
+      if (!('geolocation' in navigator)) return sinUbicacion();
+      btnCerca.setAttribute('aria-busy', 'true');
+      decir('Buscando tu ubicación…');
+      navigator.geolocation.getCurrentPosition((pos) => {
+        btnCerca.removeAttribute('aria-busy');
+        const yo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        estado.provincia = ''; sel.value = '';                 // tu ubicación manda sobre la provincia elegida
+        aplicar({ ajustar: false });
+        const { cerca, masCercana } = obrasCerca(filtrar(obras, { deportes: estado.deportes }), yo, 50);
+        const limites = mapa.mostrarUsuario(yo.lat, yo.lng, 50);
+        const conFiltro = estado.deportes ? ' con ese filtro' : '';
+        const nota = 'Tu ubicación se usa solo en tu navegador: no la guardamos ni la enviamos.';
+        if (cerca.length) {
+          decir(`Tenemos ${cerca.length} ${cerca.length === 1 ? 'obra' : 'obras'} a menos de 50 km${conFiltro}`, { nota });
+          mapa.encuadrar(limites);
+        } else if (masCercana) {
+          decir(`Todavía no tenemos obras a menos de 50 km${conFiltro}. La más cercana está a ${Math.round(masCercana.km)} km.`, { nota });
+          mapa.encuadrar(L.latLngBounds([[yo.lat, yo.lng], [masCercana.o.lat, masCercana.o.lng]]));
+        } else {
+          decir('No hay obras para mostrar con ese filtro.', { nota });
+        }
+        medicion.registrar('cerca_tuyo', { resultado: 'ok', cantidad: cerca.length });
+      }, sinUbicacion, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+    });
+  }
+
+  // ---------------- WhatsApp: flotante solo cuando el hero salió de pantalla + medición de clics
+  const hero = $('hero');
+  if (hero && 'IntersectionObserver' in window) {
+    new IntersectionObserver(([e]) => document.body.classList.toggle('hero-fuera', !e.isIntersecting), { threshold: 0 }).observe(hero);
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest?.('a[href*="wa.me"]');
+    if (!a || a.id === 'compartir-wa') return;
+    const origen = a.classList.contains('wa-flotante') ? 'flotante' : a.closest('#hero') ? 'hero' : a.closest('#cierre') ? 'cierre' : a.closest('#tarjeta') ? 'tarjeta' : 'otro';
+    const f = filtroTexto();
+    medicion.registrar('click_whatsapp', { origen, deporte: obraAbierta?.deporte ?? f.deporte, provincia: obraAbierta?.provincia ?? f.provincia });
+  });
 
   // Secciones de la landing pública (titular, contadores, destacadas, cierre). La versión interna no las tiene.
   const irAlMapa = (o) => {

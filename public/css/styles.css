@@ -126,3 +126,33 @@ h1, h2, h3 { margin: 0; font-weight: 800; text-transform: uppercase; line-height
 /* Aviso de gestos sobre el mapa («Usá Ctrl + rueda…», «Usá dos dedos…»). */
 .aviso-gestos { position: absolute; left: 50%; top: 50%; z-index: 480; margin: 0; max-width: 88%; padding: 12px 18px; border-radius: 12px; background: rgba(34, 40, 44, 0.88); color: #fff; font-size: 0.9rem; font-weight: 700; text-align: center; pointer-events: none; opacity: 0; transform: translate(-50%, -50%); transition: opacity 0.2s; }
 .aviso-gestos.visible { opacity: 1; }
+
+/* Acciones sobre el mapa: «Cerca tuyo» y «Compartir esta vista» */
+.acciones-mapa { position: relative; z-index: 1100; flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; background: var(--color-fondo-claro); border-bottom: 1px solid var(--color-borde); }
+.btn-accion { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border: 1.5px solid var(--color-carbon); border-radius: 999px; background: #fff; color: var(--color-carbon); font: inherit; font-size: 0.8rem; font-weight: 800; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.btn-accion svg { width: 16px; height: 16px; fill: currentColor; flex: none; }
+.btn-accion:hover, .btn-accion[aria-expanded='true'] { background: var(--color-carbon); color: #fff; }
+.btn-accion:focus-visible, .compartir-menu > *:focus-visible { outline: 3px solid var(--color-primario); outline-offset: 2px; }
+.btn-accion[aria-busy='true'] { opacity: 0.6; cursor: progress; }
+.solo-escritorio { display: none; }
+@media (min-width: 560px) { .solo-escritorio { display: inline; } }
+.compartir { position: relative; }
+.compartir-menu { position: absolute; left: 0; top: calc(100% + 6px); z-index: 1000; min-width: 220px; padding: 6px; display: flex; flex-direction: column; border-radius: 12px; background: #fff; box-shadow: var(--sombra); }
+.compartir-menu[hidden] { display: none; }
+.compartir-menu > * { display: block; padding: 12px; border: 0; border-radius: 8px; background: none; color: var(--color-carbon); font: inherit; font-size: 0.85rem; font-weight: 700; text-align: left; text-decoration: none; cursor: pointer; }
+.compartir-menu > *:hover { background: var(--color-fondo-claro); }
+.mensaje-cerca { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; font-size: 0.82rem; font-weight: 700; color: var(--color-carbon); }
+.mensaje-cerca[hidden] { display: none; }
+.mensaje-cerca .select-provincia { order: 0; height: 36px; }
+.mensaje-cerca small { flex: 1 1 100%; font-weight: 600; color: var(--color-texto-suave); }
+
+/* Obras en construcción: anillo sutil que late alrededor del pin + etiqueta «En obra ahora». */
+.slv-pin .p { position: relative; }
+.slv-pin.en-obra .p::after { content: ''; position: absolute; inset: -9px; border: 2px solid var(--c); border-radius: 50%; opacity: 0; pointer-events: none; animation: slv-anillo 2.4s ease-out infinite; }
+@keyframes slv-anillo { 0% { transform: scale(0.55); opacity: 0.75; } 70%, 100% { transform: scale(1.3); opacity: 0; } }
+.estado-obra.en-marcha::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: var(--color-primario); animation: slv-latido 1.6s ease-in-out infinite; }
+@keyframes slv-latido { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) {
+  .slv-pin.en-obra .p::after { animation: none; opacity: 0.5; transform: scale(1.05); }
+  .estado-obra.en-marcha::before { animation: none; }
+}

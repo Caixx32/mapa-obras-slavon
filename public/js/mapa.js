@@ -80,6 +80,7 @@ export function crearMapa(contenedor, opciones) {
   const grupo = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 46, spiderfyOnMaxZoom: true, chunkedLoading: true, iconCreateFunction: iconoCluster }).addTo(map);
   const marcadores = new Map(); // id → marker
   let seleccionado = null;
+  let usuario = [];
 
   function marcador(o) {
     if (!marcadores.has(o.id)) {
@@ -131,6 +132,21 @@ export function crearMapa(contenedor, opciones) {
     },
     reDibujarSeleccion(id) {
       if (id) marcadores.get(id)?._icon?.classList.add('sel');
+    },
+    /** «Cerca tuyo»: marca la posición con un círculo de `radioKm` y devuelve sus límites para encuadrar. */
+    mostrarUsuario(lat, lng, radioKm) {
+      usuario.forEach((l) => l.remove());
+      const radio = L.circle([lat, lng], { radius: radioKm * 1000, color: '#22282C', weight: 1.5, opacity: 0.55, dashArray: '6 6', fillColor: '#22282C', fillOpacity: 0.05, interactive: false }).addTo(map);
+      const punto = L.circleMarker([lat, lng], { radius: 8, color: '#fff', weight: 3, fillColor: '#1F5FD6', fillOpacity: 1, interactive: false }).addTo(map);
+      usuario = [radio, punto];
+      return radio.getBounds();
+    },
+    encuadrar(limites) {
+      map.fitBounds(limites, { padding: [28, 28], maxZoom: 12, animate: true });
+    },
+    quitarUsuario() {
+      usuario.forEach((l) => l.remove());
+      usuario = [];
     },
     invalidar() {
       map.invalidateSize();

@@ -78,7 +78,7 @@ async function optimizar(buf, destDir, hash) {
   await fs.mkdir(destDir, { recursive: true });
   // .rotate() aplica la orientación EXIF y sharp descarta todos los metadatos (incluida la ubicación GPS).
   const base = () => sharp(buf, { failOn: 'none' }).rotate();
-  await base().resize({ width: ANCHO_MAX, withoutEnlargement: true }).webp({ quality: CALIDAD }).toFile(principal);
+  await base().resize({ width: ANCHO_MAX, height: ANCHO_MAX, fit: 'inside', withoutEnlargement: true }).webp({ quality: CALIDAD }).toFile(principal);   // 1600 px en el lado más largo: una foto vertical no pesa el doble
   await base().resize({ width: ANCHO_MINIATURA, withoutEnlargement: true }).webp({ quality: CALIDAD_MINI }).toFile(mini);
   return true;
 }

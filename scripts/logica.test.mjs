@@ -84,3 +84,86 @@ test('texto de países y formato de números es-AR', () => {
   assert.equal(formatoNumero(1320), '1.320');
   assert.equal(formatoNumero(24), '24');
 });
+
+// ---------------------------------------------------------------- links compartibles, cerca tuyo, medición
+import { filtrosDesdeUrl, consultaDesdeFiltros, slugProvincia, distanciaKm, obrasCerca, sumarCanchas } from '../public/js/logica.js';
+import { crearMedicion } from '../public/js/medicion.js';
+import { corregirCiudad } from './lib/master.mjs';
+
+const DEPORTES_URL = ['padel', 'cesped_padel', 'futbol', 'hockey'];
+const PROVS = [{ nombre: 'Córdoba', valor: 'Argentina|Córdoba' }, { nombre: 'Buenos Aires', valor: 'Argentina|Buenos Aires' }];
+
+test('links: ?deporte=padel&provincia=cordoba carga los filtros', () => {
+  const f = filtrosDesdeUrl('?deporte=padel&provincia=cordoba', { deportesValidos: DEPORTES_URL, provincias: PROVS });
+  assert.deepEqual([...f.deportes], ['padel']);
+  assert.equal(f.provincia, 'Argentina|Córdoba');
+});
+
+test('links: varios deportes, provincia con espacio, y valores desconocidos se ignoran', () => {
+  const f = filtrosDesdeUrl('?deporte=futbol,padel,inventado&provincia=buenos-aires', { deportesValidos: DEPORTES_URL, provincias: PROVS });
+  assert.deepEqual([...f.deportes].sort(), ['futbol', 'padel']);
+  assert.equal(f.provincia, 'Argentina|Buenos Aires');
+  const vacio = filtrosDesdeUrl('?deporte=nada&provincia=narnia&x=1', { deportesValidos: DEPORTES_URL, provincias: PROVS });
+  assert.equal(vacio.deportes, null);
+  assert.equal(vacio.provincia, '');
+});
+
+test('links: todos los deportes = sin filtro; y ida y vuelta de los filtros', () => {
+  assert.equal(filtrosDesdeUrl('?deporte=padel,cesped_padel,futbol,hockey', { deportesValidos: DEPORTES_URL, provincias: PROVS }).deportes, null);
+  const estado = { deportes: new Set(['futbol', 'padel']), provincia: 'Argentina|Córdoba' };
+  const qs = consultaDesdeFiltros(estado, DEPORTES_URL);
+  assert.equal(qs, '?deporte=padel,futbol&provincia=cordoba');
+  const vuelta = filtrosDesdeUrl(qs, { deportesValidos: DEPORTES_URL, provincias: PROVS });
+  assert.deepEqual([...vuelta.deportes].sort(), ['futbol', 'padel']);
+  assert.equal(vuelta.provincia, estado.provincia);
+  assert.equal(consultaDesdeFiltros({ deportes: null, provincia: '' }, DEPORTES_URL), '');
+  assert.equal(slugProvincia('Tierra del Fuego'), 'tierra-del-fuego');
+});
+
+test('cerca tuyo: distancia y obras a menos de 50 km', () => {
+  const obelisco = { lat: -34.6037, lng: -58.3816 };
+  assert.ok(Math.abs(distanciaKm(obelisco, { lat: -34.9205, lng: -57.9536 }) - 53) < 3, 'Buenos Aires – La Plata ≈ 53 km');
+  const obras = [
+    { id: '1', lat: -34.61, lng: -58.4, cantidad_canchas: 2 },     // ~2 km
+    { id: '2', lat: -34.9205, lng: -57.9536, cantidad_canchas: 1 }, // ~53 km
+    { id: '3', lat: -31.4, lng: -64.18, cantidad_canchas: 1 },      // Córdoba
+    { id: '4', lat: null, lng: null, cantidad_canchas: 5 },         // sin ubicación: no cuenta
+  ];
+  const r = obrasCerca(obras, obelisco, 50);
+  assert.deepEqual(r.cerca.map((o) => o.id), ['1']);
+  assert.equal(r.masCercana.o.id, '1');
+  const lejos = obrasCerca(obras, { lat: -41.1, lng: -71.3 }, 50); // Bariloche
+  assert.equal(lejos.cerca.length, 0);
+  assert.ok(lejos.masCercana.km > 500);
+  assert.equal(sumarCanchas(obras), 9);
+});
+
+test('medición: sin IDs no hace nada; con IDs válidos registra los cuatro eventos', () => {
+  const llamadas = [];
+  const scripts = [];
+  const win = { document: { createElement: () => ({}), head: { append: (s) => scripts.push(s.src) } } };
+  const m = crearMedicion(win);
+  m.iniciar({ ga4_id: '', meta_pixel_id: '' });
+  m.registrar('click_whatsapp', { deporte: 'padel' });
+  assert.deepEqual(scripts, [], 'no se carga ningún script externo');
+  assert.equal(win.gtag, undefined);
+
+  const m2 = crearMedicion(win);
+  m2.iniciar({ ga4_id: 'G-ABC123XYZ', meta_pixel_id: '123456789012345' });
+  win.gtag = (...a) => llamadas.push(['ga4', ...a]);
+  win.fbq = (...a) => llamadas.push(['meta', ...a]);
+  for (const e of ['click_whatsapp', 'filtro_usado', 'compartir', 'cerca_tuyo']) m2.registrar(e, { deporte: 'padel', provincia: 'Córdoba' });
+  assert.equal(llamadas.filter((l) => l[0] === 'ga4').length, 4);
+  assert.deepEqual(llamadas.find((l) => l[0] === 'meta'), ['meta', 'trackCustom', 'click_whatsapp', { deporte: 'padel', provincia: 'Córdoba' }]);
+  assert.ok(scripts.some((s) => s.includes('googletagmanager.com/gtag/js?id=G-ABC123XYZ')));
+
+  const m3 = crearMedicion({ document: win.document });
+  m3.iniciar({ ga4_id: 'cualquier cosa', meta_pixel_id: 'abc' });
+  assert.deepEqual(m3.activo, { ga4: false, meta: false }, 'IDs inválidos no activan nada');
+});
+
+test('pipeline: corrige errores de tipeo de ciudades', () => {
+  assert.deepEqual(corregirCiudad('Caba', 'Buenos Aires'), { ciudad: 'Buenos Aires', provincia: 'CABA' });
+  assert.deepEqual(corregirCiudad('dpto. Avellaneda', 'Santiago del Estero'), { ciudad: 'Avellaneda', provincia: 'Santiago del Estero' });
+  assert.equal(corregirCiudad('Rosario', 'Santa Fe'), null);
+});

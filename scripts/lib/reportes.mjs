@@ -111,3 +111,36 @@ export async function escribirCoordenadasAprox(ruta, obras, nuevas, fallidas) {
   await wb.xlsx.writeFile(ruta);
   return { aprox: aprox.length, sinUbicar: restantes.length };
 }
+
+const COLS_OBRA = [
+  { titulo: 'id', clave: 'id', ancho: 8 },
+  { titulo: 'obra', clave: 'obra', ancho: 38 },
+  { titulo: 'deporte', clave: 'deporte', ancho: 13 },
+  { titulo: 'ciudad', clave: 'ciudad', ancho: 22 },
+  { titulo: 'provincia', clave: 'provincia', ancho: 18 },
+  { titulo: 'dirección (interna)', clave: 'dir', ancho: 44 },
+  { titulo: 'cliente (interno)', clave: 'cliente', ancho: 30 },
+];
+const filaObra = (o, extra = {}) => ({ id: o.id, obra: o.nombre_club || '', deporte: o.deporte, ciudad: o.ciudad ?? '', provincia: o.provincia ?? '', dir: o.direccion_interna ?? '', cliente: o.cliente_interno ?? '', ...extra });
+
+/** Obras publicables que siguen sin ubicación después de geocodificar, con el motivo. */
+export async function escribirSinUbicar(ruta, obras, fallidas) {
+  await fs.mkdir(path.dirname(ruta), { recursive: true });
+  const fallidasIds = new Set(fallidas.map((o) => o.id));
+  const motivo = (o) => (fallidasIds.has(o.id) ? 'La ciudad no se encontró en esa provincia (¿error de tipeo?)' : !o.provincia ? 'Falta la provincia' : !o.ciudad ? 'Falta la ciudad' : 'No se pudo consultar');
+  const filas = obras.filter((o) => o.publicar && o.lat === null).map((o) => filaObra(o, { motivo: motivo(o) }));
+  const wb = new ExcelJS.Workbook();
+  hoja(wb, 'SIN UBICAR', [...COLS_OBRA, { titulo: 'por qué', clave: 'motivo', ancho: 46 }], filas);
+  await wb.xlsx.writeFile(ruta);
+  return filas.length;
+}
+
+/** Obras publicables sin provincia (no entran al filtro por provincia ni al contador de provincias). */
+export async function escribirSinProvincia(ruta, obras) {
+  await fs.mkdir(path.dirname(ruta), { recursive: true });
+  const filas = obras.filter((o) => o.publicar && !o.provincia).map((o) => filaObra(o, { ubicada: o.lat === null ? 'no' : 'sí' }));
+  const wb = new ExcelJS.Workbook();
+  hoja(wb, 'SIN PROVINCIA', [...COLS_OBRA, { titulo: 'ya tiene punto en el mapa', clave: 'ubicada', ancho: 16 }], filas);
+  await wb.xlsx.writeFile(ruta);
+  return filas.length;
+}

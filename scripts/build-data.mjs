@@ -10,7 +10,7 @@ import { leerMaestra } from './lib/master.mjs';
 import { construirPublico, construirInterno } from './lib/publico.mjs';
 import { crearCarpetas, procesarFotos } from './lib/fotos.mjs';
 import { leerKml, completarDesdeKml, geocodificarFaltantes, cargarCache, guardarCache } from './lib/coords.mjs';
-import { escribirFotosPendientes, escribirCoordenadasAprox } from './lib/reportes.mjs';
+import { escribirFotosPendientes, escribirCoordenadasAprox, escribirSinUbicar, escribirSinProvincia } from './lib/reportes.mjs';
 
 const args = process.argv.slice(2);
 const tiene = (f) => args.includes(f);
@@ -27,6 +27,8 @@ const RUTAS = {
   cacheGeo: R('data', 'geocache.json'),
   fotosPendientes: R('fotos-pendientes.xlsx'),
   aprox: R('reportes', 'coordenadas-aprox.xlsx'),
+  sinUbicar: R('reportes', 'sin-ubicar.xlsx'),
+  sinProvincia: R('reportes', 'sin-provincia.xlsx'),
   avisos: R('reportes', 'avisos.txt'),
 };
 
@@ -102,6 +104,8 @@ async function main() {
   console.log('5/5  Reportes…');
   const nPend = await escribirFotosPendientes(RUTAS.fotosPendientes, obras, fotos.publicas, fotos.internas);
   const rep = await escribirCoordenadasAprox(RUTAS.aprox, obras, geo.hechas, geo.fallidas);
+  const nSinUbicar = await escribirSinUbicar(RUTAS.sinUbicar, obras, geo.fallidas);
+  const nSinProvincia = await escribirSinProvincia(RUTAS.sinProvincia, obras);
   await fs.mkdir(path.dirname(RUTAS.avisos), { recursive: true });
   await fs.writeFile(RUTAS.avisos, avisos.join('\n') + '\n');
 
@@ -112,6 +116,7 @@ async function main() {
   console.log(`  Versión interna : data/obras-internas.json (${kb(tamInt)}) — NO se sube a GitHub`);
   console.log(`  Sin foto        : ${nPend} obras → fotos-pendientes.xlsx (destacadas primero)`);
   console.log(`  Coordenadas aprox: ${rep.aprox} para revisar · sin ubicar: ${rep.sinUbicar} → reportes/coordenadas-aprox.xlsx`);
+  console.log(`  Sin ubicar      : ${nSinUbicar} obras → reportes/sin-ubicar.xlsx · sin provincia: ${nSinProvincia} → reportes/sin-provincia.xlsx`);
   if (avisos.length) {
     console.log(`\n⚠ ${avisos.length} aviso(s) (todos en reportes/avisos.txt):`);
     avisos.slice(0, 12).forEach((a) => console.log('  - ' + a));

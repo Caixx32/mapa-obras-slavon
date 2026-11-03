@@ -54,6 +54,7 @@ function contadores(config, meta) {
     ['cesped', meta.canchas_cesped, 'canchas de césped'],
     ['provincias', meta.provincias, 'provincias alcanzadas'],
   ];
+  if (meta.obras_en_obra > 0) items.push(['en_marcha', meta.obras_en_obra, 'obras en marcha']);
   cont.replaceChildren(...items.map(([clave, valor, porDefecto]) => {
     const d = el('div', 'contador');
     const cifra = el('p', 'cifra', '0');
@@ -62,6 +63,8 @@ function contadores(config, meta) {
     return d;
   }));
   animarContadores(cont);
+  const nota = $('contadores-nota');
+  if (nota) nota.textContent = textos.nota ?? 'Las cifras cuentan canchas. En el mapa cada punto es una obra, y una obra puede tener varias canchas.';
 }
 
 function tarjetaDestacada(o, config, verEnMapa) {

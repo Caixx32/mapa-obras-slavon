@@ -9,6 +9,11 @@
 
   "web": "https://slavon.com.ar",
 
+  "ga4_id": "",
+  "_ayuda_ga4_id": "Medición opcional. ID de Google Analytics 4 (empieza con G-). Vacío = no se carga nada de Google. Si lo completás, se registran: click_whatsapp, filtro_usado, compartir, cerca_tuyo.",
+  "meta_pixel_id": "",
+  "_ayuda_meta_pixel_id": "Medición opcional. ID del Pixel de Meta (solo números). Vacío = no se carga nada de Meta. Registra los mismos eventos.",
+
   "hero": {
     "etiqueta": "Mapa de obras",
     "titular": "Más de {N} canchas construidas en {paises}",
@@ -21,7 +26,9 @@
     "total": "canchas construidas",
     "padel": "canchas de pádel",
     "cesped": "canchas de césped",
-    "provincias": "provincias alcanzadas"
+    "provincias": "provincias alcanzadas",
+    "en_marcha": "obras en marcha",
+    "nota": "Las cifras cuentan canchas. En el mapa cada punto es una obra, y una obra puede tener varias canchas."
   },
 
   "destacadas": {

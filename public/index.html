@@ -57,6 +57,7 @@
 
       <!-- 2. CONTADORES -->
       <div class="contadores" id="contadores" role="group" aria-label="La obra de SLAVON en números"></div>
+      <p class="contadores-nota" id="contadores-nota"></p>
     </div>
   </header>
 
@@ -67,6 +68,17 @@
       <div class="filtros" role="group" aria-label="Filtros del mapa">
         <div class="chips" id="chips"></div>
         <select id="provincia" class="select-provincia" aria-label="Provincia"></select>
+      </div>
+      <div class="acciones-mapa" id="acciones-mapa">
+        <button type="button" class="btn-accion" id="btn-cerca" aria-label="Ver obras cerca tuyo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span>Cerca tuyo</span></button>
+        <div class="compartir">
+          <button type="button" class="btn-accion" id="btn-compartir" aria-haspopup="true" aria-expanded="false" aria-controls="compartir-menu" aria-label="Compartir esta vista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16a3 3 0 0 0-2.2 1l-6.9-3.9a3 3 0 0 0 0-2.2L15.8 7A3 3 0 1 0 15 5a3 3 0 0 0 .1.7L8.2 9.6a3 3 0 1 0 0 4.8l6.9 3.9A3 3 0 1 0 18 16z"/></svg><span>Compartir<span class="solo-escritorio"> esta vista</span></span></button>
+          <div class="compartir-menu" id="compartir-menu" hidden>
+            <button type="button" id="compartir-copiar">Copiar link</button>
+            <a id="compartir-wa" href="https://wa.me/" target="_blank" rel="noopener">Enviar por WhatsApp</a>
+          </div>
+        </div>
+        <p class="mensaje-cerca" id="mensaje-cerca" role="status" hidden></p>
       </div>
       <div class="mapa-wrap">
         <div id="mapa" role="region" aria-label="Mapa interactivo de obras"></div>
