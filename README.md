@@ -164,12 +164,16 @@ La imagen se arma desde `scripts/og/og.html` (abrirla en el navegador a 1200×63
 
 ## Mapa de fondo
 
-Se usa el mapa de **OpenStreetMap** (gratis, sin clave ni registro) con un filtro gris (`mapa.filtro` en `public/config.json`) para que los pines de colores resalten.
+Se usa el mapa de **OpenStreetMap** (gratis, sin clave ni registro), a todo color. Si algún día se lo quiere más suave o en gris, se agrega un filtro en `mapa.filtro` de `public/config.json`
+(por ejemplo `grayscale(1) contrast(0.9) brightness(1.08)`).
 Los créditos «© OpenStreetMap contributors» tienen que quedar visibles en el mapa (ya lo están).
 El servidor de mapas de OpenStreetMap es para uso razonable ([política de uso](https://operations.osmfoundation.org/policies/tiles/)) y no tiene garantía de servicio:
 para una web con mucho tráfico conviene un proveedor con plan propio (CARTO, MapTiler, Stadia, etc.). Para cambiarlo alcanza con editar `tiles`, `atribucion` y `filtro`
 en la sección `mapa` de `config.json`; no hay que tocar código. (CARTO dejó de servir su mapa sin clave de API, por eso no se usa por defecto.)
 Si el mapa de fondo no carga, aparece un aviso y las obras se siguen viendo.
+
+**Zoom con la rueda:** para que el mapa no «atrape» el scroll de la página, la rueda baja la página hasta que se hace clic en el mapa; desde ahí hace zoom hasta que el mouse sale del mapa.
+En el celular, un dedo desplaza la página y dos dedos mueven/acercan el mapa. Los botones +/−, el doble clic y el pellizco del trackpad funcionan siempre.
 
 ## Librerías del mapa
 

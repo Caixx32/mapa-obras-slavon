@@ -56,11 +56,11 @@
   },
 
   "mapa": {
-    "_ayuda": "Mapa de fondo. Por defecto: OpenStreetMap (gratis, sin clave) con un filtro gris para que los pines de colores resalten. Para usar otro proveedor (CARTO, MapTiler, Stadia, etc. con su clave) cambiá tiles, atribucion y filtro.",
+    "_ayuda": "Mapa de fondo. Por defecto: OpenStreetMap (gratis, sin clave) a todo color. Si querés un mapa gris o más suave, poné un filtro CSS en \"filtro\" (ej: grayscale(1) contrast(0.9) brightness(1.08)). Para otro proveedor (CARTO, MapTiler, Stadia, etc. con su clave) cambiá tiles, atribucion y filtro.",
     "tiles": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     "subdominios": "",
     "zoom_nativo_maximo": 19,
-    "filtro": "grayscale(1) contrast(0.9) brightness(1.08)",
+    "filtro": "",
     "atribucion": "© <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> contributors"
   }
 }

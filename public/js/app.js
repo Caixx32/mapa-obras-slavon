@@ -10,7 +10,7 @@ const baseFotos = modo === 'interno' ? '../' : '';                  // las fotos
 const URL_DATOS = modo === 'interno' ? '../data/obras-internas.json' : 'data/obras-publicas.json';
 const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ATRIBUCION = '© OpenStreetMap contributors';
-const FILTRO_MAPA = 'grayscale(1) contrast(0.9) brightness(1.08)';
+const FILTRO_MAPA = '';
 
 const $ = (id) => document.getElementById(id);
 const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
