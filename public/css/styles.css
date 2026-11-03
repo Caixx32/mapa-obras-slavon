@@ -122,3 +122,7 @@ h1, h2, h3 { margin: 0; font-weight: 800; text-transform: uppercase; line-height
 
 /* Aviso si no carga el mapa de fondo (sin internet o servidor de mapas caído): las obras se siguen viendo. */
 .aviso-mapa { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 450; margin: 0; max-width: 90%; padding: 8px 14px; border-radius: 999px; background: var(--color-carbon); color: #fff; font-size: 0.78rem; font-weight: 700; text-align: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+
+/* Aviso de gestos sobre el mapa («Usá Ctrl + rueda…», «Usá dos dedos…»). */
+.aviso-gestos { position: absolute; left: 50%; top: 50%; z-index: 480; margin: 0; max-width: 88%; padding: 12px 18px; border-radius: 12px; background: rgba(34, 40, 44, 0.88); color: #fff; font-size: 0.9rem; font-weight: 700; text-align: center; pointer-events: none; opacity: 0; transform: translate(-50%, -50%); transition: opacity 0.2s; }
+.aviso-gestos.visible { opacity: 1; }
