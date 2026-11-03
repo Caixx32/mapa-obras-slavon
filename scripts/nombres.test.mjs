@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { limpiarNombre, clasificarNombre, parecePersona, aplicarPrivacidad } from './lib/nombres.mjs';
+import { limpiarNombre, clasificarNombre, parecePersona, aplicarPrivacidad, empiezaConNombreDePila } from './lib/nombres.mjs';
 import { registroPublico, verificarFugas } from './lib/publico.mjs';
 
 const obra = (o = {}) => ({ id: '0001', deporte: 'futbol', ciudad: 'Rosario', provincia: 'Santa Fe', pais: 'Argentina', lat: -32.94682, lng: -60.63932, cantidad_canchas: 1, estado: 'terminada', publicar: true, nombrable: false, destacada: false, ...o });
@@ -80,6 +80,41 @@ test('privacidad (datos reales): el JSON público no tiene coordenadas con más 
   assert.deepEqual(largas, [], 'coordenadas con más de 2 decimales');
   const personas = obras.filter((o) => o.nombrable && parecePersona(o.nombre_club, o) && !/\b(colegio|escuela|instituto|universidad|municipalidad|municipio|country|barrio|sindicato|gremio|estadio|polideportivo|cooperativa|fundaci[oó]n|mutual|anfiteatro|sociedad|asociaci[oó]n)\b/i.test(o.nombre_club)).map((o) => `${o.id}: ${o.nombre_club}`);
   assert.deepEqual(personas, [], 'nombres que parecen de una persona física');
+  const conPila = obras.filter((o) => o.nombrable && empiezaConNombreDePila(o.nombre_club)).map((o) => `${o.id}: ${o.nombre_club}`);
+  assert.deepEqual(conPila, [], 'nombres que empiezan con un nombre de pila + Club/Municipalidad/Instituto/Barrio');
   const sucios = obras.filter((o) => o.nombrable && /(pedido|\bop\s?n?[°º]?\s?\d|\bcalle\b|\bentre\b|\bpresidente del\b|\b\d{4,}\b)/i.test(o.nombre_club)).map((o) => `${o.id}: ${o.nombre_club}`);
   assert.deepEqual(sucios, [], 'nombres con dirección, pedido u opción');
+});
+
+test('formato «nombre de pila + Club/Municipalidad/Instituto/Barrio» al inicio = persona; se muestra sin el nombre de pila', () => {
+  const casos = {
+    'Gladys Esther Quinteiros (Club Defensores Unidos)': 'Club Defensores Unidos',
+    'Pablo Club Atletico Susanense': 'Club Atlético Susanense',
+    'Melisa Club Sastre': 'Club Sastre',
+    'Cristian Club Tiro Federal y Deportivo Morteros': 'Club Tiro Federal y Deportivo Morteros',
+    'Hernan Club Uribelarrea': 'Club Uribelarrea',
+    'Ale del Instituto Cardenal Newman': 'Instituto Cardenal Newman',
+    'Alejandro de bardas padel': 'Bardas Pádel',
+    'Antonio Barrio "La Alegria"': 'Barrio La Alegría',
+    'Eugenia Municipalidad de Valcheta': 'Municipalidad de Valcheta',
+  };
+  for (const [crudo, esperado] of Object.entries(casos)) {
+    assert.equal(limpiarNombre(crudo), esperado, crudo);
+    const r = clasificarNombre(obra({ nombre_club: crudo }));
+    assert.equal(r.propuesta, 'nombrable', crudo);
+    assert.ok(!empiezaConNombreDePila(r.limpio), `${r.limpio} no debe empezar con un nombre de pila`);
+  }
+  for (const crudo of ['Pablo Club Atletico Susanense', 'Melisa Club Sastre', 'Ale del Instituto Cardenal Newman', 'Antonio Barrio "La Alegria"', 'Eugenia Municipalidad de Valcheta', 'Nicolas Municipalidad']) {
+    assert.ok(empiezaConNombreDePila(crudo) && parecePersona(crudo), `${crudo} debe contar como persona`);
+  }
+  assert.equal(clasificarNombre(obra({ nombre_club: 'Nicolas Municipalidad' })).propuesta, 'anonima');
+});
+
+test('anónimas pedidas: empresas y nombres genéricos', () => {
+  for (const n of ['Bolivar - Padel Completa', 'Palacios Construcciones', 'Pose Sa - Tecma Sa Viviendas U.t', 'Tecnosolutions SRL', 'Quintana Energy', 'Municipio', 'Fútbol 5', 'Complejo Deportivo']) {
+    assert.equal(clasificarNombre(obra({ nombre_club: n })).propuesta, 'anonima', n);
+  }
+  for (const n of ['Club 77', 'Domo Padel', 'Arena 360°', 'Municipalidad de Lanús', 'Club 25 de Mayo']) {
+    assert.equal(clasificarNombre(obra({ nombre_club: n })).propuesta, 'nombrable', n);   // llevan un nombre propio: no son genéricas
+  }
 });

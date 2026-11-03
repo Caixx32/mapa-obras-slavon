@@ -3,7 +3,7 @@
 //  - solo campos del modelo (lista blanca). Nunca: fuente, cliente, direcciones, notas, precios.
 //  - falla (no escribe nada) si detecta nombres de clientes, direcciones, mails o teléfonos.
 import { norm, nombreGenerico, redondear2 } from './util.mjs';
-import { limpiarNombre, parecePersona } from './nombres.mjs';
+import { limpiarNombre, parecePersona, empiezaConNombreDePila } from './nombres.mjs';
 
 export const CAMPOS_PUBLICOS = [
   'id', 'nombre_club', 'deporte', 'tipo', 'cantidad_canchas', 'provincia', 'ciudad', 'pais',
@@ -126,6 +126,7 @@ export function verificarFugas(registros, obrasInternas) {
     for (const f of r.fotos) if (/_privada/i.test(f.src) || /fotos-internas/i.test(f.src) || /^data\//i.test(f.src)) problemas.push(`obra ${r.id}: foto privada en la versión pública (${f.src})`);
     const decimales = (n) => (n === null ? 0 : (String(n).split('.')[1] ?? '').length);
     if (decimales(r.lat) > 2 || decimales(r.lng) > 2) problemas.push(`obra ${r.id}: coordenadas con más de 2 decimales (en la versión pública van todas redondeadas)`);
+    if (r.nombrable && empiezaConNombreDePila(r.nombre_club)) problemas.push(`obra ${r.id}: el nombre «${r.nombre_club}» empieza con un nombre de pila (persona + institución)`);
     if (r.nombrable && parecePersona(r.nombre_club, r) && !/\b(colegio|escuela|instituto|universidad|municipalidad|municipio|country|barrio|sindicato|gremio|uom|estadio|polideportivo|cooperativa|fundaci[oó]n|mutual|c[ií]rculo|anfiteatro|sociedad|asociaci[oó]n|fomento)\b/i.test(r.nombre_club)) problemas.push(`obra ${r.id}: el nombre «${r.nombre_club}» parece de una persona física`);
   }
   if (problemas.length) {
