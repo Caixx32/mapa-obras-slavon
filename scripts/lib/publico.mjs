@@ -87,11 +87,15 @@ export function verificarFugas(registros, obrasInternas) {
     for (const v of [r.ciudad, r.provincia, r.pais]) if (v) permitidos.add(norm(v));
     if (r.nombrable && r.nombre_club) permitidos.add(norm(r.nombre_club));
   }
+  // Nombres de club ya autorizados y publicados en otra obra: una copia oculta del mismo club (duplicado, otra «Op») no es una fuga.
+  const nombresPublicos = [...permitidos].filter((n) => registros.some((r) => r.nombrable && r.nombre_club && norm(r.nombre_club) === n)).map((n) => ` ${n} `);
   const sensibles = [];
   for (const o of obrasInternas) {
     const agregar = (tipo, v, minimo) => {
       const n = norm(v);
-      if (n.length >= minimo && !permitidos.has(n)) sensibles.push({ id: o.id, tipo, n });
+      if (n.length < minimo || permitidos.has(n)) return;
+      if (tipo === 'nombre de club no nombrable' && nombresPublicos.some((p) => p.includes(` ${n} `))) return;
+      sensibles.push({ id: o.id, tipo, n });
     };
     if (!o.nombrable && o.nombre_club) agregar('nombre de club no nombrable', o.nombre_club, 5);
     if (o.cliente_interno) agregar('cliente', o.cliente_interno, 8);
@@ -106,6 +110,8 @@ export function verificarFugas(registros, obrasInternas) {
       if (campo === 'nombre_club' && !r.nombrable) continue;
       const t = ` ${norm(val)} `;
       for (const s of sensibles) {
+        // El nombre de club de una obra nombrable ya fue autorizado: que repita el cliente de la misma obra (o de otra del mismo club) no es una fuga.
+        if (campo === 'nombre_club' && s.tipo === 'cliente') continue;
         if (t.includes(` ${s.n} `)) problemas.push(`obra ${r.id}, campo ${campo}: contiene «${s.n}» (${s.tipo} de la obra ${s.id})`);
       }
     }
