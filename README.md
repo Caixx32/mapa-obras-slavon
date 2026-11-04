@@ -32,6 +32,26 @@ scripts/                  ← build-data, servidor local y tests
 - La primera vez: `npm install`.
 - Copiá `obras-maestra.xlsx` a la carpeta del proyecto (te la pasa el equipo; no está en GitHub).
 
+## Cómo se actualiza hoy: un Google Sheet y una carpeta de Drive
+
+Desde ahora **no se descargan ni se suben archivos**. Todo se maneja desde:
+
+- el Google Sheet **«Mapa SLAVON»** (pestañas MAPA, INTERNO, AVISOS, CÓMO USAR; LISTAS y GEO van ocultas), y
+- la carpeta de Drive **«Fotos Mapa SLAVON»** (una subcarpeta por obra, «ID - Nombre»).
+
+Una GitHub Action (`.github/workflows/pages.yml`) lee las dos cosas con una cuenta de servicio de Google (secret `GOOGLE_SA_KEY`):
+
+- **Todas las noches a las 3 AM (Argentina)** publica si hubo cambios; si no, no hace nada.
+- **Cada 5 minutos** le pone ID a las filas nuevas, crea su carpeta de fotos y publica si se tildó «Publicar ahora» (AVISOS!B5).
+- Si algo falla, la web anterior sigue online y el motivo queda escrito en la pestaña AVISOS.
+- Los registros de GitHub son públicos: por eso el detalle con nombres va **solo** a AVISOS, nunca al registro.
+
+Reglas que se aplican siempre (no dependen de lo que escriba el Sheet): coordenadas públicas redondeadas a 2 decimales, solo columnas públicas, una persona física nunca se muestra, las fotos con «privada» en el nombre no se publican.
+
+Código: `scripts/ci-sheet.mjs` (entrada), `scripts/lib/publicador.mjs` (lógica), `scripts/lib/mapa-sheet.mjs` (columnas, links de Google Maps, avisos), `scripts/lib/preparar-sheet.mjs` (desplegables, casillas, fórmula), `scripts/lib/google.mjs` (Sheets y Drive). `scripts/migrar-a-sheet.mjs` fue la migración única desde la planilla maestra. Los pasos de la configuración inicial están en la conversación con el equipo; la clave de la cuenta de servicio **nunca** va al repositorio.
+
+> Lo de abajo (`npm run build-data` y la planilla `obras-maestra.xlsx`) es el sistema anterior: queda como respaldo local.
+
 ## Actualizar los datos (2 pasos)
 
 1. Editá `obras-maestra.xlsx` (hoja **OBRAS**) y guardala.

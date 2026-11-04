@@ -71,7 +71,7 @@ export async function crearCarpetas(dirFotos, obras) {
   return creadas;
 }
 
-async function optimizar(buf, destDir, hash) {
+export async function optimizar(buf, destDir, hash) {
   const principal = path.join(destDir, `${hash}.webp`);
   const mini = path.join(destDir, `${hash}-t.webp`);
   if ((await existe(principal)) && (await existe(mini))) return false;
