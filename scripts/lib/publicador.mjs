@@ -153,6 +153,14 @@ async function escribirAvisos(almacen, { resultado, cuantasEnMapa = '', avisos =
   if (filas.length) await almacen.escribirRango(`'${P.avisos}'!A${FILA_ENCABEZADO_AVISOS + 1}`, filas);
 }
 
+/** Si GitHub no pudo desplegar la web, queda escrito en AVISOS (el resultado «OK» que había era de antes del despliegue). */
+export async function avisarErrorDespliegue(almacen) {
+  await almacen.actualizarCeldas(P.avisos, [
+    { a1: 'B3', valor: fechaLocal() },
+    { a1: 'B4', valor: 'ERROR: la web nueva se armó bien, pero GitHub no pudo publicarla. La web anterior sigue online y se reintenta sola en la próxima publicación.' },
+  ]);
+}
+
 /**
  * modo: 'poll' (cada 5 min: IDs, carpetas y «Publicar ahora») · 'nocturno' (3 AM: publica si hubo cambios) ·
  *       'manual' / 'push' (publica siempre).
