@@ -2,7 +2,10 @@
 // Es idempotente: si el Sheet ya está preparado (marca en LISTAS!J1) no hace nada. Se corre solo en la primera pasada.
 import { PESTANAS, COLUMNAS, DEPORTE_ETIQUETA, ESTADO_ETIQUETA, GENERICO_BASE, FILA_PUBLICAR_AHORA, FILA_ENCABEZADO_AVISOS } from './mapa-sheet.mjs';
 
-export const MARCA = 'mapa-slavon-preparado-v1';
+export const MARCA_ANTERIOR = 'mapa-slavon-preparado-v1';
+export const MARCA = 'mapa-slavon-preparado-v2';
+// La fórmula se escribe con comas: el Sheet tiene que estar en inglés (en_US) para entenderla, sin importar el idioma en que lo ves.
+export const SOLICITUD_IDIOMA = { updateSpreadsheetProperties: { properties: { locale: 'en_US' }, fields: 'locale' } };
 const FILAS = 5000;
 export const LIMITE_FILAS = 6000;   // alto de las pestañas AVISOS y GEO (el Sheet no deja escribir más allá del final)
 export const PROVINCIAS = ['CABA', 'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba', 'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro', 'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego', 'Tucumán', 'Islas Baleares', 'Montevideo', 'Canelones', 'Maldonado', 'Colonia'];
@@ -71,6 +74,13 @@ export function solicitudesFormato(ids) {
 export async function prepararSheet(almacen, { forzar = false } = {}) {
   const marca = await almacen.leerRango(`'${PESTANAS.listas}'!J1`);
   if (!forzar && marca?.[0]?.[0] === MARCA) return false;
+  if (!forzar && marca?.[0]?.[0] === MARCA_ANTERIOR) {   // preparado con la versión 1: solo se arregla la fórmula de «Nombre a mostrar»
+    await almacen.batchUpdate([SOLICITUD_IDIOMA]);
+    await almacen.limpiarRango(`'${PESTANAS.mapa}'!C2:C${LIMITE_FILAS}`);
+    await almacen.escribirRango(`'${PESTANAS.mapa}'!C2`, [[FORMULA_NOMBRE_A_MOSTRAR]], { usuario: true });
+    await almacen.escribirRango(`'${PESTANAS.listas}'!J1`, [[MARCA]]);
+    return true;
+  }
   let tabs = await almacen.pestanas();
   if (!tabs.some((t) => t.title === PESTANAS.mapa)) throw new Error(`El Sheet no tiene una pestaña llamada «${PESTANAS.mapa}». Usá el archivo «Mapa SLAVON.xlsx» que te preparé.`);
   const faltan = [PESTANAS.interno, PESTANAS.avisos, PESTANAS.manual, PESTANAS.listas, PESTANAS.geo].filter((n) => !tabs.some((t) => t.title === n));
@@ -84,6 +94,7 @@ export async function prepararSheet(almacen, { forzar = false } = {}) {
   await almacen.escribirRango(`'${PESTANAS.manual}'!A1`, TEXTO_MANUAL);
   // El archivo importado trae solo las filas que usa: se agregan filas vacías para las obras nuevas y para las casillas.
   await almacen.batchUpdate([PESTANAS.mapa, PESTANAS.interno].map((n) => ({ appendDimension: { sheetId: id(n), dimension: 'ROWS', length: 4000 } })));
+  await almacen.batchUpdate([SOLICITUD_IDIOMA]);
   await almacen.batchUpdate(solicitudesFormato({ mapa: id(PESTANAS.mapa), avisos: id(PESTANAS.avisos), manual: id(PESTANAS.manual), listas: id(PESTANAS.listas), geo: id(PESTANAS.geo) }));
   await almacen.limpiarRango(`'${PESTANAS.mapa}'!C2:C${LIMITE_FILAS}`);   // la fórmula se «derrama» hacia abajo: la columna tiene que estar vacía
   await almacen.escribirRango(`'${PESTANAS.mapa}'!C2`, [[FORMULA_NOMBRE_A_MOSTRAR]], { usuario: true });

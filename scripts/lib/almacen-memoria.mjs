@@ -18,6 +18,7 @@ export class AlmacenMemoria {
     this.archivos = [];
     this.contenidos = new Map();
     this.llamadas = [];
+    this.solicitudes = [];
     this.n = 0;
   }
   agregarFoto(carpetaId, nombre, buffer) {
@@ -54,7 +55,7 @@ export class AlmacenMemoria {
   }
   async actualizarCeldas(tab, items) { for (const { a1, valor } of items) await this.escribirRango(`'${tab}'!${a1}`, [[valor]]); }
   async pestanas() { return Object.keys(this.tabs).map((title, i) => ({ sheetId: i + 1, title })); }
-  async batchUpdate(requests) { for (const r of requests) if (r.addSheet) this.tabs[r.addSheet.properties.title] ??= []; this.llamadas.push(requests.length); }
+  async batchUpdate(requests) { for (const r of requests) if (r.addSheet) this.tabs[r.addSheet.properties.title] ??= []; this.llamadas.push(requests.length); this.solicitudes.push(...requests); }
   async listarFotos() { return { carpetas: [...this.carpetas], archivos: [...this.archivos] }; }
   async descargar(id) { return this.contenidos.get(id); }
   async crearCarpeta(nombre) { const c = { id: `carpeta${++this.n}`, nombre }; this.carpetas.push(c); return c; }

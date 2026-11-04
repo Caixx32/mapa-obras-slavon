@@ -6,7 +6,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { AlmacenMemoria } from './lib/almacen-memoria.mjs';
 import { ejecutar } from './lib/publicador.mjs';
-import { prepararSheet, FORMULA_NOMBRE_A_MOSTRAR, TEXTO_MANUAL } from './lib/preparar-sheet.mjs';
+import { prepararSheet, FORMULA_NOMBRE_A_MOSTRAR, TEXTO_MANUAL, MARCA, MARCA_ANTERIOR } from './lib/preparar-sheet.mjs';
 import { COLUMNAS, COLUMNAS_INTERNO, extraerCoordenadas, expandirLinkCorto, asignarIds, nombreCarpeta, idDeCarpeta, esFotoPrivada, leerObras } from './lib/mapa-sheet.mjs';
 
 const fila = ({ id = '', club = '', mostrar = '', deporte = 'Fútbol', tipo = '', canchas = 1, ciudad = '', prov = '', pais = 'Argentina', anio = '', estado = 'Terminada', link = '', nombrar = false, dest = false, pub = true, notas = '' } = {}) =>
@@ -167,4 +167,23 @@ test('si algo falla queda la web anterior y el error se escribe en AVISOS', asyn
   await assert.rejects(ejecutar({ ...comun, modo: 'manual' }), /Google respondió 500/);
   assert.match(almacen.tabs.AVISOS[3][1], /^ERROR/);
   assert.equal(await fs.readFile(path.join(raiz, '_site', 'data', 'obras-publicas.json'), 'utf8'), antes, 'no se tocó la versión anterior');
+});
+
+test('un Sheet preparado con la versión 1 se repara: idioma en_US y fórmula de «Nombre a mostrar» de nuevo', async () => {
+  const a = new AlmacenMemoria({ ...BASE(), LISTAS: [Array(9).fill('').concat([MARCA_ANTERIOR])] });
+  assert.equal(await prepararSheet(a), true);
+  assert.ok(a.solicitudes.some((r) => r.updateSpreadsheetProperties?.properties?.locale === 'en_US'));
+  assert.equal(a.tabs.LISTAS[0][9], MARCA);
+  assert.equal(await prepararSheet(a), false, 'la segunda vez no hace nada');
+  assert.ok(!a.solicitudes.some((r) => r.addProtectedRange), 'la reparación no repite los permisos ni las filas');
+});
+
+test('si «Nombre a mostrar» muestra un error, queda escrito en AVISOS y la web sale igual', async () => {
+  const tabs = BASE();
+  tabs.MAPA[1][2] = '#ERROR!';
+  const { comun, publicado, avisos } = await entorno(tabs);
+  const r = await ejecutar({ ...comun, modo: 'manual' });
+  assert.equal(r.publicar, true);
+  assert.ok(avisos().some((f) => f[0] === 'AVISO' && /Nombre a mostrar/.test(f[2])));
+  assert.equal((await publicado()).obras.find((o) => o.id === '0001').nombre_club, 'Club Los Pinos', 'si la fórmula falla, el nombre sale del nombre del club');
 });
