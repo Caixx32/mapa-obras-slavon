@@ -18,6 +18,7 @@ permissions:
   contents: write           # solo para dejar una marca de actividad en la rama «actividad» (ver el último paso)
   pages: write
   id-token: write
+  deployments: read         # para encontrar despliegues de GitHub Pages que quedaron trabados
 
 concurrency:
   group: pages
@@ -103,6 +104,17 @@ jobs:
       name: github-pages
       url: ${{ steps.reintento.outputs.page_url || steps.deployment.outputs.page_url }}
     steps:
+      # Si un despliegue anterior quedó «en curso» para siempre, GitHub Pages rechaza todos los nuevos.
+      # Como las corridas van de a una (concurrency), cualquier despliegue en curso es viejo: se cancela.
+      - name: Liberar despliegues trabados
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for sha in $(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=github-pages&per_page=5" --jq '.[].sha' | sort -u); do
+            gh api -X POST "repos/$GITHUB_REPOSITORY/pages/deployments/$sha/cancel" >/dev/null 2>&1 || true
+          done
+
       - id: deployment
         uses: actions/deploy-pages@v4
         continue-on-error: true
