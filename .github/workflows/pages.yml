@@ -1,51 +1,107 @@
-# Publica SOLO la carpeta public/ en GitHub Pages cada vez que se une algo a main.
-# También se puede correr a mano: pestaña Actions → "Publicar en GitHub Pages" → Run workflow.
+# Publicación automática del mapa.
+#   · Todas las noches a las 3 AM (hora de Argentina): lee el Google Sheet y la carpeta de Drive y publica si hubo cambios.
+#   · Cada 5 minutos: le pone ID a las filas nuevas, crea sus carpetas de fotos y publica si se tildó «Publicar ahora» en AVISOS.
+#   · Cuando cambia el código (push a main) o se corre a mano: publica siempre.
+# Si algo falla, la web anterior sigue online y el motivo queda escrito en la pestaña AVISOS del Sheet.
+# Sin el secret GOOGLE_SA_KEY funciona como antes: publica lo que hay en public/.
 name: Publicar en GitHub Pages
 
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '0 6 * * *'     # 06:00 UTC = 03:00 en Argentina
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write           # solo para dejar una marca de actividad en la rama «actividad» (ver el último paso)
   pages: write
   id-token: write
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  publicar:
+  preparar:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    timeout-minutes: 45
+    outputs:
+      publicar: ${{ steps.sitio.outputs.publicar }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Revisar que no se publique nada interno
         run: |
-          if find public -type f \( -iname '*.xlsx' -o -iname '*.kml' -o -iname '*.kmz' -o -iname '*_privada*' -o -iname 'obras-internas*' -o -iname 'geocache*' \) | grep -q .; then
+          if find public -type f \( -iname '*.xlsx' -o -iname '*.kml' -o -iname '*.kmz' -o -iname '*_privada*' -o -iname '*privada*' -o -iname 'obras-internas*' -o -iname 'geocache*' \) | grep -q .; then
             echo "::error::Hay archivos internos dentro de public/. No se publica."
-            find public -type f \( -iname '*.xlsx' -o -iname '*.kml' -o -iname '*.kmz' -o -iname '*_privada*' -o -iname 'obras-internas*' -o -iname 'geocache*' \)
             exit 1
           fi
           test -s public/data/obras-publicas.json || { echo "::error::Falta public/data/obras-publicas.json"; exit 1; }
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
 
-      # Copia de public/ con los CSS y JS marcados con la versión de esta publicación (?v=…):
-      # así el navegador nunca mezcla un HTML nuevo con estilos o scripts viejos que tenía guardados.
-      - name: Marcar los archivos con la versión
+      - run: npm ci --omit=dev
+
+      - name: Fotos ya optimizadas (para no volver a procesarlas)
+        id: cache-fotos
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache-fotos
+          key: fotos-${{ github.run_id }}
+          restore-keys: fotos-
+
+      - name: Leer el Sheet y Drive y armar la web
+        id: sitio
+        env:
+          GOOGLE_SA_KEY: ${{ secrets.GOOGLE_SA_KEY }}
+          EVENTO: ${{ github.event_name }}
+          PROGRAMACION: ${{ github.event.schedule }}
         run: |
-          cp -r public _sitio
-          node scripts/versionar.mjs _sitio "${{ github.sha }}"
+          case "$EVENTO" in
+            schedule) if [ "$PROGRAMACION" = "0 6 * * *" ]; then MODO=nocturno; else MODO=poll; fi ;;
+            push) MODO=push ;;
+            *) MODO=manual ;;
+          esac
+          node scripts/ci-sheet.mjs --modo=$MODO
+
+      - name: Guardar las fotos optimizadas
+        if: steps.sitio.outputs.publicar == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .cache-fotos
+          key: fotos-${{ github.run_id }}
+
+      - uses: actions/configure-pages@v5
+        if: steps.sitio.outputs.publicar == 'true'
 
       - uses: actions/upload-pages-artifact@v3
+        if: steps.sitio.outputs.publicar == 'true'
         with:
-          path: _sitio
+          path: _site
 
+      # GitHub pausa los programas automáticos de un repositorio público sin actividad en 60 días: dejamos una marca diaria.
+      - name: Marca de actividad
+        if: github.event.schedule == '0 6 * * *'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/actividad" >/dev/null 2>&1 || gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref=refs/heads/actividad -f sha="$GITHUB_SHA" >/dev/null
+          SHA=$(gh api "repos/$GITHUB_REPOSITORY/contents/ultima-actividad.txt?ref=actividad" --jq .sha 2>/dev/null || true)
+          gh api -X PUT "repos/$GITHUB_REPOSITORY/contents/ultima-actividad.txt" -f message="Marca de actividad" -f content="$(date -u +%FT%TZ | base64)" -f branch=actividad ${SHA:+-f sha=$SHA} >/dev/null
+
+  desplegar:
+    needs: preparar
+    if: needs.preparar.outputs.publicar == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4

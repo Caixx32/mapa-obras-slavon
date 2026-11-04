@@ -234,3 +234,6 @@ export function aplicarPrivacidad(obras, decisiones = new Map(), confirmados = n
   }
   return filas;
 }
+
+/** ¿El nombre lleva una palabra de institución fuerte (colegio, estadio, municipalidad…)? Esas pueden llevar el nombre de una persona (homenaje). */
+export const esInstitucionFuerte = (nombre) => toks(nombre).some((x) => INSTITUCION_FUERTE.has(x));

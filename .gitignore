@@ -30,3 +30,7 @@ Thumbs.db
 *.log
 .env
 .env.*
+
+# --- Publicación automática (se generan en cada corrida) ---
+_site/
+.cache-fotos/
