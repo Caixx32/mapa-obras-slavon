@@ -101,7 +101,33 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.reintento.outputs.page_url || steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      # GitHub Pages a veces está terminando otro despliegue y rechaza el nuevo: se espera y se reintenta una vez.
+      - name: Esperar antes de reintentar
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 150
+
+      - id: reintento
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+
+  # Si el despliegue falló de verdad, queda escrito en AVISOS (la web anterior sigue online y la próxima corrida lo reintenta).
+  avisar:
+    needs: [preparar, desplegar]
+    if: always() && needs.desplegar.result == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --omit=dev
+      - env:
+          GOOGLE_SA_KEY: ${{ secrets.GOOGLE_SA_KEY }}
+        run: node scripts/ci-sheet.mjs --modo=error-despliegue

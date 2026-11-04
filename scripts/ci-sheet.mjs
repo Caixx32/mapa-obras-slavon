@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { RAIZ } from './lib/util.mjs';
 import { ClienteGoogle, AlmacenGoogle } from './lib/google.mjs';
-import { ejecutar } from './lib/publicador.mjs';
+import { ejecutar, avisarErrorDespliegue } from './lib/publicador.mjs';
 import { versionarCarpeta } from './versionar.mjs';
 
 const modo = process.argv.find((a) => a.startsWith('--modo='))?.slice(7) ?? 'manual';
@@ -23,6 +23,7 @@ try {
     await salir(['manual', 'push'].includes(modo), `Modo ${modo}: ${['manual', 'push'].includes(modo) ? 'se publica' : 'no se publica'}.`);
   } else {
     const almacen = await new AlmacenGoogle(new ClienteGoogle(process.env.GOOGLE_SA_KEY)).iniciar();
+    if (modo === 'error-despliegue') { await avisarErrorDespliegue(almacen); console.log('Se anotó el error de despliegue en AVISOS.'); process.exit(0); }
     const sitio = process.env.SITIO_URL ?? `https://${(process.env.GITHUB_REPOSITORY ?? 'Caixx32/mapa-obras-slavon').split('/').join('.github.io/')}`;
     const huellaPublicada = async () => {
       try { const r = await fetch(`${sitio}/data/version.json`, { headers: { 'cache-control': 'no-cache' } }); return r.ok ? (await r.json()).huella : null; } catch { return null; }
