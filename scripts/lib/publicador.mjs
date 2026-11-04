@@ -162,6 +162,8 @@ export async function ejecutar({ almacen, modo, raiz = RAIZ, salida = path.join(
   const avisos = [];
   try {
     await prepararSheet(almacen);
+    const celdaC2 = (await almacen.leerRango(`'${P.mapa}'!C2`))?.[0]?.[0];
+    if (typeof celdaC2 === 'string' && celdaC2.startsWith('#')) avisos.push({ tipo: 'AVISO', id: '', texto: `La columna «Nombre a mostrar» muestra un error (${celdaC2.slice(0, 20)}). La web sale bien igual: el nombre se calcula por otro camino.` });
 
     // 1) Mantenimiento barato: ID a las filas nuevas y carpeta de fotos de cada una
     let mapa = await almacen.leerPestana(P.mapa);
