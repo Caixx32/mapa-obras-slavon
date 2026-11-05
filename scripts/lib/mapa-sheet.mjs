@@ -6,13 +6,21 @@ import { normalizarFila } from './master.mjs';
 import { parecePersona, empiezaConNombreDePila, esInstitucionFuerte, limpiarNombre } from './nombres.mjs';
 
 export const PESTANAS = { mapa: 'MAPA', interno: 'INTERNO', avisos: 'AVISOS', manual: 'CÓMO USAR', listas: 'LISTAS', geo: 'GEO' };
-export const COLUMNAS = ['ID', 'Nombre del club', 'Nombre a mostrar', 'Deporte', 'Tipo', 'Canchas', 'Ciudad', 'Provincia', 'País', 'Año', 'Estado', 'Link de Google Maps', '¿Se puede nombrar?', '¿Destacada?', '¿Publicar?', 'Notas internas'];
+export const COLUMNAS = ['ID', 'Nombre del club', 'Nombre a mostrar', 'Nombre de referencia', 'Deporte', 'Tipo', 'Canchas', 'Ciudad', 'Provincia', 'País', 'Año', 'Estado', 'Link de Google Maps', '¿Se puede nombrar?', '¿Destacada?', '¿Publicar?', 'Notas internas'];
+export const COLUMNAS_V1 = COLUMNAS.filter((c) => c !== 'Nombre de referencia');   // el Sheet como se armó al principio (sin la columna de referencia)
 export const COLUMNAS_INTERNO = ['ID', 'Cliente', 'Dirección', 'Servicio', 'Fuente', 'Origen de la ubicación', 'Descripción corta', 'Nota del mapa', 'A revisar', 'Video'];
 export const DEPORTE_ETIQUETA = { padel: 'Pádel', cesped_padel: 'Césped pádel', futbol: 'Fútbol', hockey: 'Hockey', tenis: 'Tenis', residencial: 'Residencial', otro: 'Otros' };
 export const ESTADO_ETIQUETA = { terminada: 'Terminada', en_obra: 'En obra' };
 export const GENERICO_BASE = { padel: 'Complejo de pádel', cesped_padel: 'Complejo de pádel', futbol: 'Complejo de fútbol', hockey: 'Complejo de hockey', tenis: 'Complejo de tenis', residencial: 'Espacio residencial', otro: 'Obra deportiva' };
 export const FILA_PUBLICAR_AHORA = 5;   // AVISOS!B5
 export const FILA_ENCABEZADO_AVISOS = 9;   // los avisos empiezan en la fila siguiente
+
+/** Posición de cada columna según los TÍTULOS de la fila 1 (así no se rompe si se mueve una columna). Falta → -1. */
+export function indicesDeEncabezado(encabezado = []) {
+  const porNombre = new Map(encabezado.map((h, i) => [norm(h), i]));
+  return Object.fromEntries(COLUMNAS.map((c) => [c, porNombre.has(norm(c)) ? porNombre.get(norm(c)) : -1]));
+}
+export const letraDeColumna = (i) => { let s = ''; for (let n = i + 1; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + ((n - 1) % 26)) + s; return s; };
 
 export const esVerdadero = (v) => v === true || ['true', 'verdadero', 'si', 'x', '1'].includes(norm(v));
 export const idDeEtiqueta = (texto) => {
@@ -65,7 +73,7 @@ export async function expandirLinkCorto(url, fetchFn = fetch) {
  */
 export function leerObras(mapa, interno = []) {
   const avisos = [];
-  const col = Object.fromEntries(COLUMNAS.map((c, i) => [c, i]));
+  const col = indicesDeEncabezado(mapa[0]);
   const colI = Object.fromEntries(COLUMNAS_INTERNO.map((c, i) => [c, i]));
   const internos = new Map();
   for (const f of interno.slice(1)) {
@@ -75,7 +83,7 @@ export function leerObras(mapa, interno = []) {
   const obras = [];
   const vistos = new Set();
   mapa.slice(1).forEach((f, k) => {
-    if (!f || f.slice(1).every((v) => v === '' || v === undefined || v === null || v === false)) return;
+    if (!f || f.every((v, i) => i === col.ID || v === '' || v === undefined || v === null || v === false)) return;
     const nFila = k + 2;
     const id = idDeCelda(f[col.ID]);
     if (!id) { avisos.push({ tipo: 'ERROR', id: '', texto: `La fila ${nFila} no tiene ID todavía (se asigna sola en unos minutos). No se publica hasta entonces.` }); return; }
@@ -136,16 +144,17 @@ export function aplicarNombres(obras) {
 
 // ---------------------------------------------------------------- IDs nuevos
 export function asignarIds(mapa) {
-  const col = Object.fromEntries(COLUMNAS.map((c, i) => [c, i]));
-  const usados = mapa.slice(1).map((f) => Number(idDeCelda(f?.[0]))).filter(Number.isFinite);
+  const col = indicesDeEncabezado(mapa[0]);
+  if (col.ID < 0) return [];
+  const usados = mapa.slice(1).map((f) => Number(idDeCelda(f?.[col.ID]))).filter(Number.isFinite);
   let max = usados.length ? Math.max(...usados) : 0;
   const nuevos = [];
   mapa.slice(1).forEach((f, k) => {
-    if (!f || idDeCelda(f[0])) return;
+    if (!f || idDeCelda(f[col.ID])) return;
     const hayDatos = [col['Nombre del club'], col.Ciudad, col.Provincia, col.Deporte, col['Link de Google Maps']].some((c) => String(f[c] ?? '').trim() !== '');
     if (!hayDatos) return;
     max += 1;
-    nuevos.push({ fila: k + 2, id: pad4(max), nombre: String(f[col['Nombre del club']] || f[col.Ciudad] || 'obra').trim() });
+    nuevos.push({ fila: k + 2, id: pad4(max), idx: col.ID, a1: `${letraDeColumna(col.ID)}${k + 2}`, nombre: String(f[col['Nombre del club']] || f[col.Ciudad] || f[col.Provincia] || 'obra').trim() });
   });
   return nuevos;
 }

@@ -177,8 +177,8 @@ export async function ejecutar({ almacen, modo, raiz = RAIZ, salida = path.join(
     let mapa = await almacen.leerPestana(P.mapa);
     const nuevos = asignarIds(mapa);
     if (nuevos.length) {
-      await almacen.actualizarCeldas(P.mapa, nuevos.map((n) => ({ a1: `A${n.fila}`, valor: n.id })));
-      for (const n of nuevos) { mapa[n.fila - 1] = mapa[n.fila - 1] ?? []; mapa[n.fila - 1][0] = n.id; }
+      await almacen.actualizarCeldas(P.mapa, nuevos.map((n) => ({ a1: n.a1, valor: n.id })));
+      for (const n of nuevos) { mapa[n.fila - 1] = mapa[n.fila - 1] ?? []; mapa[n.fila - 1][n.idx] = n.id; }
     }
     // 2) ¿Hay que publicar?
     const boton = esVerdadero((await almacen.leerRango(`'${P.avisos}'!B${FILA_PUBLICAR_AHORA}`))?.[0]?.[0]);
@@ -207,7 +207,7 @@ export async function ejecutar({ almacen, modo, raiz = RAIZ, salida = path.join(
 
     // 5) ¿Cambió algo desde la última publicación?
     const config = await fs.readFile(path.join(raiz, 'public', 'config.json'), 'utf8').catch(() => '');
-    const huellaActual = huella({ mapa: mapa.map((f) => f.slice(0, 16)), interno: interno.length, fotos: listado.archivos.map((a) => [a.id, a.md5, a.carpetaId, a.nombre]), carpetas: listado.carpetas.map((c) => c.nombre), config, sha });
+    const huellaActual = huella({ mapa: mapa.map((f) => f.slice(0, 20)), interno: interno.length, fotos: listado.archivos.map((a) => [a.id, a.md5, a.carpetaId, a.nombre]), carpetas: listado.carpetas.map((c) => c.nombre), config, sha });
     if (modo === 'nocturno' && !boton && (await huellaPublicada()) === huellaActual) {
       return { publicar: false, motivo: 'sin-cambios' };
     }
