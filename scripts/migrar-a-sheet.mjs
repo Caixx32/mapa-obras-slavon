@@ -57,7 +57,7 @@ export function filas(obras, privacidad = new Map()) {
     const link = o.lat !== null && o.origen_coord !== 'aprox' ? `https://www.google.com/maps?q=${o.lat},${o.lng}` : '';
     const prop = privacidad.get(o.id);
     const notas = [o.revisar, prop?.propuesta === 'revisar' ? `Revisar si se puede nombrar (${prop.motivo})` : '', o.nombrable && o.nombre_club && o.nombre_club !== o.nombre_publico ? `Nombre original: ${o.nombre_club}` : '', o._fusionados?.length ? `Fusión de ${[o.id, ...o._fusionados].join(', ')}` : ''].filter(Boolean).join(' | ');
-    return [o.id, o.nombrable ? o.nombre_publico : o.nombre_club ?? '', null, DEPORTE_ETIQUETA[o.deporte], o.tipo ?? '', o.cantidad_canchas, o.ciudad ?? '', o.provincia ?? '', o.pais, o.anio ?? '', ESTADO_ETIQUETA[o.estado], link, o.nombrable, o.destacada, o.publicar, notas];
+    return [o.id, o.nombrable ? o.nombre_publico : o.nombre_club ?? '', null, o.cliente_interno ?? '', DEPORTE_ETIQUETA[o.deporte], o.tipo ?? '', o.cantidad_canchas, o.ciudad ?? '', o.provincia ?? '', o.pais, o.anio ?? '', ESTADO_ETIQUETA[o.estado], link, o.nombrable, o.destacada, o.publicar, notas];
   });
   const interno = obras.map((o) => [o.id, o.cliente_interno ?? '', o.direccion_interna ?? '', o.servicio ?? '', o.fuente ?? '', o.origen_coord ?? '', o.descripcion_corta ?? '', o.nota_mapa ?? '', o.sugerencia_nombrable ?? '', o.video_url ?? '']);
   return { mapa, interno };
@@ -74,7 +74,7 @@ async function escribir(salida, { mapa, interno }) {
     ws.views = [{ state: 'frozen', ySplit: 1 }];
     return ws;
   };
-  hoja('MAPA', COLUMNAS, mapa, [8, 36, 36, 14, 34, 9, 20, 18, 11, 7, 12, 40, 12, 11, 11, 50]);
+  hoja('MAPA', COLUMNAS, mapa, [8, 36, 36, 30, 14, 34, 9, 20, 18, 11, 7, 12, 40, 12, 11, 11, 50]);
   hoja('INTERNO', COLUMNAS_INTERNO, interno, [8, 34, 40, 20, 24, 18, 40, 40, 30, 20]);
   const l = valoresListas();
   const ws = wb.addWorksheet('LISTAS');

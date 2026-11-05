@@ -6,11 +6,11 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { AlmacenMemoria } from './lib/almacen-memoria.mjs';
 import { ejecutar, avisarErrorDespliegue } from './lib/publicador.mjs';
-import { prepararSheet, FORMULA_NOMBRE_A_MOSTRAR, TEXTO_MANUAL, MARCA, MARCA_ANTERIOR } from './lib/preparar-sheet.mjs';
-import { COLUMNAS, COLUMNAS_INTERNO, extraerCoordenadas, expandirLinkCorto, asignarIds, nombreCarpeta, idDeCarpeta, esFotoPrivada, leerObras } from './lib/mapa-sheet.mjs';
+import { prepararSheet, FORMULA_NOMBRE_A_MOSTRAR, TEXTO_MANUAL, MARCA, MARCA_ANTERIOR, MARCA_V1 } from './lib/preparar-sheet.mjs';
+import { COLUMNAS, COLUMNAS_V1, COLUMNAS_INTERNO, extraerCoordenadas, expandirLinkCorto, asignarIds, nombreCarpeta, idDeCarpeta, esFotoPrivada, leerObras } from './lib/mapa-sheet.mjs';
 
-const fila = ({ id = '', club = '', mostrar = '', deporte = 'Fútbol', tipo = '', canchas = 1, ciudad = '', prov = '', pais = 'Argentina', anio = '', estado = 'Terminada', link = '', nombrar = false, dest = false, pub = true, notas = '' } = {}) =>
-  [id, club, mostrar, deporte, tipo, canchas, ciudad, prov, pais, anio, estado, link, nombrar, dest, pub, notas];
+const fila = ({ id = '', club = '', mostrar = '', ref = '', deporte = 'Fútbol', tipo = '', canchas = 1, ciudad = '', prov = '', pais = 'Argentina', anio = '', estado = 'Terminada', link = '', nombrar = false, dest = false, pub = true, notas = '' } = {}) =>
+  [id, club, mostrar, ref, deporte, tipo, canchas, ciudad, prov, pais, anio, estado, link, nombrar, dest, pub, notas];
 const interno = (...filas) => [COLUMNAS_INTERNO, ...filas];
 const fetchGeo = async (url) => ({ ok: true, json: async () => (String(url).includes('Rosario') ? [{ lat: '-32.9468', lon: '-60.6393', display_name: 'Rosario', address: { state: 'Santa Fe' } }] : []) });
 const optsGeo = { fetchFn: fetchGeo, pausaMs: 0 };
@@ -143,7 +143,7 @@ test('links de Google Maps: largos, cortos y coordenadas sueltas', async () => {
 });
 
 test('IDs y carpetas: siguiente ID, nombre de carpeta y filas con problemas', () => {
-  const mapa = [COLUMNAS, fila({ id: '0010', club: 'A' }), fila({ club: 'Nueva', ciudad: 'Salta' }), Array(16).fill(''), fila({ club: 'Otra nueva' })];
+  const mapa = [COLUMNAS, fila({ id: '0010', club: 'A' }), fila({ club: 'Nueva', ciudad: 'Salta' }), Array(17).fill(''), fila({ club: 'Otra nueva' })];
   assert.deepEqual(asignarIds(mapa).map((n) => [n.fila, n.id]), [[3, '0011'], [5, '0012']]);
   assert.equal(nombreCarpeta('0011', 'Club: "Los/Pinos"'), '0011 - Club Los Pinos');
   assert.equal(idDeCarpeta('0647 - Club Huracán'), '0647');
@@ -170,7 +170,7 @@ test('si algo falla queda la web anterior y el error se escribe en AVISOS', asyn
 });
 
 test('un Sheet preparado con la versión 1 se repara: idioma en_US y fórmula de «Nombre a mostrar» de nuevo', async () => {
-  const a = new AlmacenMemoria({ ...BASE(), LISTAS: [Array(9).fill('').concat([MARCA_ANTERIOR])] });
+  const a = new AlmacenMemoria({ ...BASE(), LISTAS: [Array(9).fill('').concat([MARCA_V1])] });
   assert.equal(await prepararSheet(a), true);
   assert.ok(a.solicitudes.some((r) => r.updateSpreadsheetProperties?.properties?.locale === 'en_US'));
   assert.equal(a.tabs.LISTAS[0][9], MARCA);
@@ -194,4 +194,51 @@ test('si GitHub no puede desplegar, el error queda escrito en AVISOS', async () 
   assert.match(almacen.tabs.AVISOS[3][1], /^OK/);
   await avisarErrorDespliegue(almacen);
   assert.match(almacen.tabs.AVISOS[3][1], /^ERROR: .*no pudo publicarla/);
+});
+
+test('las columnas se leen por su título: sirve el Sheet viejo (sin referencia), el nuevo y uno con columnas movidas', () => {
+  const viejo = [COLUMNAS_V1, ['0001', 'Club A', '', 'Fútbol', 'Césped', 2, 'Salta', 'Salta', 'Argentina', 2024, 'Terminada', '-24.78, -65.41', true, false, true, '']];
+  const a = leerObras(viejo).obras[0];
+  assert.deepEqual([a.ciudad, a.provincia, a.cantidad_canchas, a.publicar, a.nombrable], ['Salta', 'Salta', 2, true, true]);
+  const nuevo = [COLUMNAS, fila({ id: '0002', club: 'Club B', ref: 'cliente Pedro Pascual', ciudad: 'Jujuy', prov: 'Jujuy', canchas: 3, nombrar: true })];
+  const b = leerObras(nuevo).obras[0];
+  assert.deepEqual([b.ciudad, b.provincia, b.cantidad_canchas, b.nombrable], ['Jujuy', 'Jujuy', 3, true]);
+  const i = COLUMNAS.indexOf('Ciudad'); const j = COLUMNAS.indexOf('Provincia');
+  const movido = nuevo.map((f) => { const g = [...f]; [g[i], g[j]] = [g[j], g[i]]; return g; });
+  movido[1][i] = 'Jujuy'; movido[1][j] = 'San Salvador';   // ahora la columna de «Ciudad» está donde estaba la de provincia, y viceversa
+  const c = leerObras(movido).obras[0];
+  assert.deepEqual([c.ciudad, c.provincia], ['San Salvador', 'Jujuy']);
+});
+
+test('la columna «Nombre de referencia» se agrega sola después de «Nombre a mostrar», con el cliente de INTERNO, y no se publica', async () => {
+  const mapaViejo = [COLUMNAS_V1,
+    ['0001', 'Club Los Pinos', 'Club Los Pinos', 'Fútbol', '', 1, 'Villa Allende', 'Córdoba', 'Argentina', '', 'Terminada', '-31.29, -64.29', true, false, true, ''],
+    ['0002', 'Otra', '', 'Pádel', '', 1, 'Rosario', 'Santa Fe', 'Argentina', '', 'Terminada', '-32.94, -60.63', false, false, true, ''],
+  ];
+  const a = new AlmacenMemoria({ MAPA: mapaViejo, INTERNO: interno(['0001', 'Pedro Pascual', 'Calle falsa 123']), LISTAS: [Array(9).fill('').concat([MARCA_ANTERIOR])] });
+  assert.equal(await prepararSheet(a), true);
+  const m = a.tabs.MAPA;
+  assert.equal(m[0][3], 'Nombre de referencia');
+  assert.equal(m[0][2], 'Nombre a mostrar');
+  assert.equal(m[0][4], 'Deporte', 'lo de la derecha se corrió una posición');
+  assert.equal(m[1][3], 'Pedro Pascual', 'se rellena con el cliente que ya figuraba en INTERNO');
+  assert.equal(m[1][4], 'Fútbol');
+  assert.equal(a.tabs.LISTAS[0][9], MARCA);
+  assert.equal(await prepararSheet(a), false);
+  // y la publicación sigue funcionando con el Sheet nuevo; la referencia nunca sale
+  const raiz = await fs.mkdtemp(path.join(os.tmpdir(), 'slavon-ref-'));
+  await fs.mkdir(path.join(raiz, 'public'), { recursive: true });
+  await fs.writeFile(path.join(raiz, 'public', 'index.html'), '<html></html>');
+  await fs.writeFile(path.join(raiz, 'public', 'config.json'), '{}');
+  await ejecutar({ almacen: a, modo: 'manual', raiz, salida: path.join(raiz, '_site'), cacheFotos: path.join(raiz, '.c'), opcionesGeo: optsGeo, sha: '' });
+  const texto = await fs.readFile(path.join(raiz, '_site', 'data', 'obras-publicas.json'), 'utf8');
+  assert.ok(!texto.includes('Pedro Pascual') && !texto.includes('Calle falsa'));
+  assert.equal(JSON.parse(texto).obras.find((o) => o.id === '0001').nombre_club, 'Club Los Pinos');
+});
+
+test('un Sheet con la versión 1 recibe las dos reparaciones (fórmula y columna de referencia)', async () => {
+  const a = new AlmacenMemoria({ MAPA: [COLUMNAS_V1, ['0001', 'A', '', 'Fútbol', '', 1, 'Salta', 'Salta', 'Argentina', '', 'Terminada', '', false, false, true, '']], INTERNO: interno(), LISTAS: [Array(9).fill('').concat([MARCA_V1])] });
+  assert.equal(await prepararSheet(a), true);
+  assert.equal(a.tabs.MAPA[0][3], 'Nombre de referencia');
+  assert.ok(a.solicitudes.some((r) => r.updateSpreadsheetProperties?.properties?.locale === 'en_US'));
 });

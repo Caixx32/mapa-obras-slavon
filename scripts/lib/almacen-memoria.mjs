@@ -55,7 +55,17 @@ export class AlmacenMemoria {
   }
   async actualizarCeldas(tab, items) { for (const { a1, valor } of items) await this.escribirRango(`'${tab}'!${a1}`, [[valor]]); }
   async pestanas() { return Object.keys(this.tabs).map((title, i) => ({ sheetId: i + 1, title })); }
-  async batchUpdate(requests) { for (const r of requests) if (r.addSheet) this.tabs[r.addSheet.properties.title] ??= []; this.llamadas.push(requests.length); this.solicitudes.push(...requests); }
+  async batchUpdate(requests) {
+    for (const r of requests) {
+      if (r.addSheet) this.tabs[r.addSheet.properties.title] ??= [];
+      if (r.insertDimension?.range.dimension === 'COLUMNS') {   // inserta una columna vacía: lo de la derecha se corre
+        const titulo = Object.keys(this.tabs)[r.insertDimension.range.sheetId - 1];
+        for (const f of this.tabs[titulo]) if (f) f.splice(r.insertDimension.range.startIndex, 0, undefined);
+      }
+    }
+    this.llamadas.push(requests.length);
+    this.solicitudes.push(...requests);
+  }
   async listarFotos() { return { carpetas: [...this.carpetas], archivos: [...this.archivos] }; }
   async descargar(id) { return this.contenidos.get(id); }
   async crearCarpeta(nombre) { const c = { id: `carpeta${++this.n}`, nombre }; this.carpetas.push(c); return c; }

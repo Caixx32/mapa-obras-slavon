@@ -1,9 +1,11 @@
 // Deja el Google Sheet listo: pestañas, desplegables, casillas, fórmula de «Nombre a mostrar», AVISOS y CÓMO USAR.
 // Es idempotente: si el Sheet ya está preparado (marca en LISTAS!J1) no hace nada. Se corre solo en la primera pasada.
-import { PESTANAS, COLUMNAS, DEPORTE_ETIQUETA, ESTADO_ETIQUETA, GENERICO_BASE, FILA_PUBLICAR_AHORA, FILA_ENCABEZADO_AVISOS } from './mapa-sheet.mjs';
+import { norm } from './util.mjs';
+import { PESTANAS, COLUMNAS, COLUMNAS_V1, DEPORTE_ETIQUETA, ESTADO_ETIQUETA, GENERICO_BASE, FILA_PUBLICAR_AHORA, FILA_ENCABEZADO_AVISOS, letraDeColumna, idDeCelda } from './mapa-sheet.mjs';
 
-export const MARCA_ANTERIOR = 'mapa-slavon-preparado-v1';
-export const MARCA = 'mapa-slavon-preparado-v2';
+export const MARCA_V1 = 'mapa-slavon-preparado-v1';
+export const MARCA_ANTERIOR = 'mapa-slavon-preparado-v2';   // con la fórmula arreglada, todavía sin la columna «Nombre de referencia»
+export const MARCA = 'mapa-slavon-preparado-v3';
 // La fórmula se escribe con comas: el Sheet tiene que estar en inglés (en_US) para entenderla, sin importar el idioma en que lo ves.
 export const SOLICITUD_IDIOMA = { updateSpreadsheetProperties: { properties: { locale: 'en_US' }, fields: 'locale' } };
 const FILAS = 5000;
@@ -12,9 +14,13 @@ export const PROVINCIAS = ['CABA', 'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut
 export const PAISES = ['Argentina', 'España', 'Uruguay'];
 
 /** «Nombre a mostrar»: el nombre del club si se puede nombrar; si no, «Complejo de fútbol – Ciudad, Provincia». Una sola fórmula para toda la columna. */
-export const FORMULA_NOMBRE_A_MOSTRAR =
-  '=ARRAYFORMULA(IF(A2:A="","",IF(M2:M=TRUE,IF(B2:B="","(falta el nombre del club)",B2:B),' +
-  'IFERROR(VLOOKUP(D2:D,LISTAS!$A$2:$B$8,2,FALSE),"Obra deportiva")&IF((G2:G="")*(H2:H=""),""," – "&IF(G2:G="","",G2:G)&IF((G2:G<>"")*(H2:H<>""),", ","")&IF(H2:H="","",H2:H)))))';
+export function formulaNombreAMostrar(columnas = COLUMNAS) {
+  const L = (nombre) => `${letraDeColumna(columnas.indexOf(nombre))}2:${letraDeColumna(columnas.indexOf(nombre))}`;
+  const [id, club, dep, ciudad, prov, nombrar] = ['ID', 'Nombre del club', 'Deporte', 'Ciudad', 'Provincia', '¿Se puede nombrar?'].map(L);
+  return `=ARRAYFORMULA(IF(${id}="","",IF(${nombrar}=TRUE,IF(${club}="","(falta el nombre del club)",${club}),` +
+    `IFERROR(VLOOKUP(${dep},LISTAS!$A$2:$B$8,2,FALSE),"Obra deportiva")&IF((${ciudad}="")*(${prov}=""),""," – "&IF(${ciudad}="","",${ciudad})&IF((${ciudad}<>"")*(${prov}<>""),", ","")&IF(${prov}="","",${prov})))))`;
+}
+export const FORMULA_NOMBRE_A_MOSTRAR = formulaNombreAMostrar();
 
 export const TEXTO_MANUAL = [
   ['CÓMO USAR (todo se hace desde este Sheet y la carpeta «Fotos Mapa SLAVON» de Drive)'],
@@ -25,7 +31,7 @@ export const TEXTO_MANUAL = [
   ['5. Fotos: arrastralas a la subcarpeta «ID - Nombre» (Drive, desde la PC o el celular). Si el nombre del archivo dice «privada», no se publica.'],
   ['6. Publicar ya: tildá «Publicar ahora» en AVISOS (también desde el celular). Tarda 5 a 10 minutos y se destilda sola. Si no, se publica sola cada noche a las 3 AM.'],
   ['7. Mirá AVISOS: dice si salió bien y qué falta (sin ubicar, sin foto, duplicados, nombres que parecen de una persona).'],
-  ['8. No cambies las columnas «ID» ni «Nombre a mostrar» (se completan solas). Los datos de clientes van SOLO en INTERNO y nunca se publican.'],
+  ['8. No cambies «ID» ni «Nombre a mostrar» (se completan solas). «Nombre de referencia» y «Notas internas» son solo para uso interno: nunca se publican. Datos de clientes: en INTERNO.'],
   ['9. Si algo sale mal, la web anterior sigue online y el motivo aparece en AVISOS.'],
 ];
 
@@ -50,7 +56,7 @@ export function solicitudesFormato(ids) {
   r.push({ repeatCell: { range: rango(mapa, 0, COLUMNAS.length, 0, 1), cell: { userEnteredFormat: { backgroundColor: carbon, textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 }, bold: true }, wrapStrategy: 'WRAP', verticalAlignment: 'MIDDLE' } }, fields: 'userEnteredFormat(backgroundColor,textFormat,wrapStrategy,verticalAlignment)' } });
   r.push({ repeatCell: { range: rango(mapa, 0, 1), cell: { userEnteredFormat: { numberFormat: { type: 'TEXT' }, backgroundColor: { red: 0.945, green: 0.953, blue: 0.957 } } }, fields: 'userEnteredFormat(numberFormat,backgroundColor)' } });
   r.push({ repeatCell: { range: rango(mapa, col('Nombre a mostrar'), col('Nombre a mostrar') + 1), cell: { userEnteredFormat: { backgroundColor: { red: 0.945, green: 0.953, blue: 0.957 }, textFormat: { italic: true } } }, fields: 'userEnteredFormat(backgroundColor,textFormat)' } });
-  const anchos = [60, 230, 260, 110, 220, 70, 150, 140, 100, 60, 100, 260, 110, 100, 100, 300];
+  const anchos = [60, 230, 260, 220, 110, 220, 70, 150, 140, 100, 60, 100, 260, 110, 100, 100, 300];
   anchos.forEach((px, i) => r.push({ updateDimensionProperties: { range: { sheetId: mapa, dimension: 'COLUMNS', startIndex: i, endIndex: i + 1 }, properties: { pixelSize: px }, fields: 'pixelSize' } }));
   r.push({ setDataValidation: { range: rango(mapa, col('¿Se puede nombrar?'), col('¿Publicar?') + 1), rule: { condition: { type: 'BOOLEAN' }, strict: true, showCustomUi: true } } });
   r.push({ setDataValidation: { range: rango(mapa, col('Deporte'), col('Deporte') + 1), rule: lista('=LISTAS!$A$2:$A$8') } });
@@ -71,13 +77,37 @@ export function solicitudesFormato(ids) {
   return r;
 }
 
+/** Inserta «Nombre de referencia» justo después de «Nombre a mostrar» y la rellena con el cliente que figura en INTERNO. Las fórmulas y los desplegables se corren solos. */
+export async function agregarColumnaReferencia(almacen) {
+  const fila1 = (await almacen.leerRango(`'${PESTANAS.mapa}'!A1:Z1`))?.[0] ?? [];
+  if (fila1.some((h) => norm(h) === norm('Nombre de referencia'))) return false;
+  const lugar = COLUMNAS.indexOf('Nombre de referencia');
+  const mapaId = (await almacen.pestanas()).find((t) => t.title === PESTANAS.mapa).sheetId;
+  await almacen.batchUpdate([{ insertDimension: { range: { sheetId: mapaId, dimension: 'COLUMNS', startIndex: lugar, endIndex: lugar + 1 }, inheritFromBefore: false } }]);
+  await almacen.batchUpdate([
+    { repeatCell: { range: { sheetId: mapaId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: lugar, endColumnIndex: lugar + 1 }, cell: { userEnteredFormat: { backgroundColor: { red: 0.133, green: 0.157, blue: 0.173 }, textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 }, bold: true }, wrapStrategy: 'WRAP', verticalAlignment: 'MIDDLE' } }, fields: 'userEnteredFormat(backgroundColor,textFormat,wrapStrategy,verticalAlignment)' } },
+    { updateDimensionProperties: { range: { sheetId: mapaId, dimension: 'COLUMNS', startIndex: lugar, endIndex: lugar + 1 }, properties: { pixelSize: 220 }, fields: 'pixelSize' } },
+  ]);
+  const letra = letraDeColumna(lugar);
+  await almacen.escribirRango(`'${PESTANAS.mapa}'!${letra}1`, [['Nombre de referencia']]);
+  const mapa = await almacen.leerPestana(PESTANAS.mapa);
+  const clientes = new Map((await almacen.leerPestana(PESTANAS.interno)).slice(1).map((f) => [idDeCelda(f[0]), String(f[1] ?? '').trim()]));
+  const valores = mapa.slice(1).map((f) => [clientes.get(idDeCelda(f?.[0])) ?? '']);
+  if (valores.some((v) => v[0])) await almacen.escribirRango(`'${PESTANAS.mapa}'!${letra}2`, valores);
+  return true;
+}
+
 export async function prepararSheet(almacen, { forzar = false } = {}) {
   const marca = await almacen.leerRango(`'${PESTANAS.listas}'!J1`);
   if (!forzar && marca?.[0]?.[0] === MARCA) return false;
-  if (!forzar && marca?.[0]?.[0] === MARCA_ANTERIOR) {   // preparado con la versión 1: solo se arregla la fórmula de «Nombre a mostrar»
-    await almacen.batchUpdate([SOLICITUD_IDIOMA]);
-    await almacen.limpiarRango(`'${PESTANAS.mapa}'!C2:C${LIMITE_FILAS}`);
-    await almacen.escribirRango(`'${PESTANAS.mapa}'!C2`, [[FORMULA_NOMBRE_A_MOSTRAR]], { usuario: true });
+  if (!forzar && [MARCA_V1, MARCA_ANTERIOR].includes(marca?.[0]?.[0])) {   // Sheet ya preparado: solo se aplican las reparaciones que faltan
+    if (marca[0][0] === MARCA_V1) {   // versión 1 → 2: idioma en_US y fórmula de «Nombre a mostrar» de nuevo
+      await almacen.batchUpdate([SOLICITUD_IDIOMA]);
+      await almacen.limpiarRango(`'${PESTANAS.mapa}'!C2:C${LIMITE_FILAS}`);
+      await almacen.escribirRango(`'${PESTANAS.mapa}'!C2`, [[formulaNombreAMostrar(COLUMNAS_V1)]], { usuario: true });
+    }
+    await agregarColumnaReferencia(almacen);   // versión 2 → 3
+    await almacen.escribirRango(`'${PESTANAS.manual}'!A1`, TEXTO_MANUAL);
     await almacen.escribirRango(`'${PESTANAS.listas}'!J1`, [[MARCA]]);
     return true;
   }
