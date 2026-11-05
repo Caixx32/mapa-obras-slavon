@@ -9,6 +9,7 @@ name: Publicar en GitHub Pages
 on:
   push:
     branches: [main]
+    paths: ['public/**']      # solo cuando cambia el sitio; los cambios del robot se aplican en la próxima corrida
   schedule:
     - cron: '0 6 * * *'     # 06:00 UTC = 03:00 en Argentina
     - cron: '*/5 * * * *'
@@ -110,17 +111,6 @@ jobs:
       name: github-pages
       url: ${{ steps.reintento.outputs.page_url || steps.deployment.outputs.page_url }}
     steps:
-      # Si un despliegue anterior quedó «en curso» para siempre, GitHub Pages rechaza todos los nuevos.
-      # Como las corridas van de a una (concurrency), cualquier despliegue en curso es viejo: se cancela.
-      - name: Liberar despliegues trabados
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          for sha in $(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=github-pages&per_page=5" --jq '.[].sha' | sort -u); do
-            gh api -X POST "repos/$GITHUB_REPOSITORY/pages/deployments/$sha/cancel" >/dev/null 2>&1 || true
-          done
-
       # GitHub Pages hoy tarda más de 10 minutos en terminar un despliegue: se espera hasta 40 minutos antes de rendirse.
       - id: deployment
         uses: actions/deploy-pages@v4
@@ -129,7 +119,17 @@ jobs:
           reporting_interval: 30000
         continue-on-error: true
 
-      # GitHub Pages a veces está terminando otro despliegue y rechaza el nuevo: se espera y se reintenta una vez.
+      # Si el primer intento falló, puede haber un despliegue viejo «en curso» que bloquea al nuevo: se cancela, se espera y se reintenta una vez.
+      - name: Liberar despliegues trabados
+        if: steps.deployment.outcome == 'failure'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for sha in $(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=github-pages&per_page=5" --jq '.[].sha' | sort -u); do
+            gh api -X POST "repos/$GITHUB_REPOSITORY/pages/deployments/$sha/cancel" >/dev/null 2>&1 || true
+          done
+
       - name: Esperar antes de reintentar
         if: steps.deployment.outcome == 'failure'
         run: sleep 150
