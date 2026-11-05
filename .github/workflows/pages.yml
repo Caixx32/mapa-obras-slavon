@@ -13,6 +13,10 @@ on:
     - cron: '0 6 * * *'     # 06:00 UTC = 03:00 en Argentina
     - cron: '*/5 * * * *'
   workflow_dispatch:
+    inputs:
+      modo:
+        description: 'manual = publica siempre · nocturno = publica solo si hubo cambios · poll = solo IDs y carpetas nuevas (y publica si está tildado «Publicar ahora»)'
+        default: manual
 
 permissions:
   contents: write           # solo para dejar una marca de actividad en la rama «actividad» (ver el último paso)
@@ -62,11 +66,12 @@ jobs:
           GOOGLE_SA_KEY: ${{ secrets.GOOGLE_SA_KEY }}
           EVENTO: ${{ github.event_name }}
           PROGRAMACION: ${{ github.event.schedule }}
+          MODO_PEDIDO: ${{ inputs.modo }}
         run: |
           case "$EVENTO" in
             schedule) if [ "$PROGRAMACION" = "0 6 * * *" ]; then MODO=nocturno; else MODO=poll; fi ;;
             push) MODO=push ;;
-            *) MODO=manual ;;
+            *) case "$MODO_PEDIDO" in nocturno|poll) MODO="$MODO_PEDIDO" ;; *) MODO=manual ;; esac ;;
           esac
           node scripts/ci-sheet.mjs --modo=$MODO
 

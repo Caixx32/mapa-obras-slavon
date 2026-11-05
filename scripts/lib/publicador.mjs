@@ -11,7 +11,7 @@ import { agruparDuplicados } from './fusiones.mjs';
 import { versionarCarpeta } from '../versionar.mjs';
 import { prepararSheet, LIMITE_FILAS } from './preparar-sheet.mjs';
 import {
-  PESTANAS, FILA_PUBLICAR_AHORA, FILA_ENCABEZADO_AVISOS, esVerdadero, leerObras, aplicarNombres, asignarIds, nombreCarpeta, idDeCarpeta, esFotoPrivada,
+  DEPORTE_ETIQUETA, PESTANAS, FILA_PUBLICAR_AHORA, FILA_ENCABEZADO_AVISOS, esVerdadero, leerObras, aplicarNombres, asignarIds, nombreCarpeta, idDeCarpeta, esFotoPrivada,
   extraerCoordenadas, esLinkCorto, expandirLinkCorto, ordenarAvisos, huella, fechaLocal,
 } from './mapa-sheet.mjs';
 
@@ -29,7 +29,7 @@ async function asegurarCarpetas(almacen, obras, listado) {
   const conCarpeta = new Set(listado.carpetas.map((c) => idDeCarpeta(c.nombre)).filter(Boolean));
   const faltan = obras.filter((o) => !conCarpeta.has(o.id));
   await enParalelo(faltan, 3, async (o) => {
-    const c = await almacen.crearCarpeta(nombreCarpeta(o.id, o.nombre_club || o.ciudad));
+    const c = await almacen.crearCarpeta(nombreCarpeta(o.id, o.nombre_club || o.ciudad || [DEPORTE_ETIQUETA[o.deporte], o.provincia].filter(Boolean).join(' ')));
     listado.carpetas.push(c);
   });
   return faltan.length;

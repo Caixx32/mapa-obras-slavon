@@ -46,6 +46,8 @@ Una GitHub Action (`.github/workflows/pages.yml`) lee las dos cosas con una cuen
 - Si algo falla, la web anterior sigue online y el motivo queda escrito en la pestaña AVISOS.
 - Los registros de GitHub son públicos: por eso el detalle con nombres va **solo** a AVISOS, nunca al registro.
 
+**El «despertador»:** GitHub no cumple los horarios con puntualidad (el programa de las 3 AM llegó a correr unas 8 horas tarde). Por eso hay un pequeño Apps Script dentro del Sheet (`scripts/apps-script/publicar.gs`) que le avisa a GitHub en el momento: al tildar «Publicar ahora», al agregar una fila nueva y todas las noches a las 3 AM. Necesita un token fino de GitHub (solo «Actions: Read and write» sobre este repositorio) guardado como propiedad `GITHUB_TOKEN` del script. Los horarios de GitHub quedan como respaldo.
+
 Reglas que se aplican siempre (no dependen de lo que escriba el Sheet): coordenadas públicas redondeadas a 2 decimales, solo columnas públicas, una persona física nunca se muestra, las fotos con «privada» en el nombre no se publican.
 
 Código: `scripts/ci-sheet.mjs` (entrada), `scripts/lib/publicador.mjs` (lógica), `scripts/lib/mapa-sheet.mjs` (columnas, links de Google Maps, avisos), `scripts/lib/preparar-sheet.mjs` (desplegables, casillas, fórmula), `scripts/lib/google.mjs` (Sheets y Drive). `scripts/migrar-a-sheet.mjs` fue la migración única desde la planilla maestra. Los pasos de la configuración inicial están en la conversación con el equipo; la clave de la cuenta de servicio **nunca** va al repositorio.
