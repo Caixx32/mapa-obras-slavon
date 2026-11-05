@@ -105,6 +105,7 @@ jobs:
     needs: preparar
     if: needs.preparar.outputs.publicar == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 110
     environment:
       name: github-pages
       url: ${{ steps.reintento.outputs.page_url || steps.deployment.outputs.page_url }}
@@ -120,8 +121,12 @@ jobs:
             gh api -X POST "repos/$GITHUB_REPOSITORY/pages/deployments/$sha/cancel" >/dev/null 2>&1 || true
           done
 
+      # GitHub Pages hoy tarda más de 10 minutos en terminar un despliegue: se espera hasta 40 minutos antes de rendirse.
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 2400000
+          reporting_interval: 30000
         continue-on-error: true
 
       # GitHub Pages a veces está terminando otro despliegue y rechaza el nuevo: se espera y se reintenta una vez.
@@ -132,6 +137,9 @@ jobs:
       - id: reintento
         if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 2400000
+          reporting_interval: 30000
 
   # Si el despliegue falló de verdad, queda escrito en AVISOS (la web anterior sigue online y la próxima corrida lo reintenta).
   avisar:
