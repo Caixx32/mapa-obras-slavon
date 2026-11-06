@@ -11,9 +11,10 @@ import { agruparDuplicados } from './fusiones.mjs';
 import { versionarCarpeta } from '../versionar.mjs';
 import { prepararSheet, LIMITE_FILAS } from './preparar-sheet.mjs';
 import {
-  DEPORTE_ETIQUETA, PESTANAS, FILA_PUBLICAR_AHORA, FILA_ENCABEZADO_AVISOS, esVerdadero, leerObras, aplicarNombres, asignarIds, nombreCarpetaObra, idDeCarpeta, esFotoPrivada,
-  extraerCoordenadas, esLinkCorto, expandirLinkCorto, ordenarAvisos, huella, fechaLocal,
+  PESTANAS, COLUMNAS_INTERNO, FILA_PUBLICAR_AHORA, FILA_ENCABEZADO_AVISOS, esVerdadero, leerObras, aplicarNombres, asignarIds, nombreCarpetaObra, idDeCarpeta, esFotoPrivada,
+  extraerCoordenadas, esLinkCorto, expandirLinkCorto, ordenarAvisos, huella, fechaLocal, indicesDeEncabezado, letraDeColumna, idDeCelda,
 } from './mapa-sheet.mjs';
+import { HOJA_BOT, describirCarpeta, planificar, leerMemoria, filasDeMemoria, filasLibres, idsDeCarpetaBot, esPiezaGrafica } from './bot-fotos.mjs';
 
 const P = PESTANAS;
 const orden = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
@@ -93,17 +94,91 @@ async function resolverUbicaciones(obras, cache, { fetchFn, opcionesGeo }) {
   return avisos;
 }
 
+// ---------------------------------------------------------------- carpeta del bot de fotos (MIGUELITO)
+const BOT_INACTIVO = { activo: false, listado: { carpetas: [], archivos: [], datos: [] }, idsDeCarpeta: () => [], escribio: false };
+
+async function guardarMemoria(almacen, mem) {
+  if (!(await almacen.pestanas()).some((p) => p.title === HOJA_BOT)) await almacen.batchUpdate([{ addSheet: { properties: { title: HOJA_BOT, hidden: true, gridProperties: { rowCount: LIMITE_FILAS, columnCount: 10 } } } }]);
+  await almacen.limpiarRango(`'${HOJA_BOT}'!A2:G${LIMITE_FILAS}`);
+  await almacen.escribirRango(`'${HOJA_BOT}'!A1`, filasDeMemoria(mem));
+}
+
+/**
+ * Lee «bot fotos» (datos.txt de cada carpeta de obra) y: empareja cada carpeta con una obra que ya existe o carga una obra nueva en MAPA
+ * (sin publicar si faltan canchas o ubicación). Después completa los datos que llegan más tarde. Nunca pisa lo que una persona escribió.
+ * Si falla, la publicación entera falla (la web anterior sigue online): así no se pierden fotos por un error pasajero.
+ */
+async function importarBot(almacen, { mapa, interno, avisos }) {
+  const listado = await almacen.listarBot();
+  const memoria = leerMemoria(await almacen.leerPestana(HOJA_BOT));
+  if (!listado.activo) {
+    if (memoria.size) throw new Error('La carpeta «bot fotos» dejó de estar compartida con el robot. No se publica para no perder las fotos que vienen de ahí.');
+    avisos.push({ tipo: 'AVISO', id: '', texto: 'No veo la carpeta «bot fotos» de Drive: compartila con el mail del robot (como Lector) y las obras y fotos de MIGUELITO entran solas.' });
+    return BOT_INACTIVO;
+  }
+  const col = indicesDeEncabezado(mapa[0]);
+  const { obras } = leerObras(mapa, interno);
+  const cuentas = new Map();
+  for (const o of obras) {
+    if (!o.ciudad || !o.provincia) continue;
+    const k = norm(o.ciudad);
+    const m = cuentas.get(k) ?? new Map();
+    m.set(o.provincia, (m.get(o.provincia) ?? 0) + 1);
+    cuentas.set(k, m);
+  }
+  const provinciaPorCiudad = new Map([...cuentas].map(([k, m]) => [k, [...m.entries()].sort((a, b) => b[1] - a[1])[0][0]]));
+
+  const carpetas = new Map(listado.carpetas.map((c) => [c.id, c]));
+  const conDatos = new Map();
+  for (const d of listado.datos) if (carpetas.has(d.carpetaId) && !conDatos.has(d.carpetaId)) conDatos.set(d.carpetaId, d);
+  const infos = [];
+  await enParalelo([...conDatos.values()], 4, async (d) => infos.push(describirCarpeta(carpetas.get(d.carpetaId), await almacen.leerTexto(d.id), provinciaPorCiudad)));
+  infos.sort((a, b) => orden.compare(a.nombre, b.nombre));
+
+  const ids = mapa.slice(1).map((f) => Number(idDeCelda(f?.[col.ID]))).filter(Number.isFinite);
+  const plan = planificar({
+    infos, obras, memoria, hoy: new Date().toISOString().slice(0, 10),
+    leerCelda: (o, c) => mapa[o._fila - 1]?.[col[c]],
+    siguienteId: ids.length ? Math.max(...ids) : 0,
+    libres: filasLibres(mapa, col, infos.length),
+  });
+  avisos.push(...plan.avisos);
+  const padre = new Map(listado.carpetas.map((c) => [c.id, c.padre]));
+  const tieneDatos = (id) => { for (let a = id, n = 0; a && n < 8; a = padre.get(a), n++) if (conDatos.has(a)) return true; return false; };
+  for (const id of [...new Set(listado.archivos.map((a) => a.carpetaId))].filter((id) => !tieneDatos(id)).slice(0, 15)) {
+    avisos.push({ tipo: 'AVISO', id: '', texto: `La carpeta del bot «${carpetas.get(id)?.nombre ?? id}» tiene fotos pero no tiene datos.txt: no se carga. Pedile a MIGUELITO que lo cree.` });
+  }
+
+  const celdas = [];
+  for (const n of plan.nuevas) {
+    celdas.push({ a1: `${letraDeColumna(col.ID)}${n.fila}`, valor: n.id });
+    for (const [c, v] of Object.entries(n.valores)) if (col[c] >= 0) celdas.push({ a1: `${letraDeColumna(col[c])}${n.fila}`, valor: v });
+  }
+  for (const c of plan.cambios) if (col[c.columna] >= 0) celdas.push({ a1: `${letraDeColumna(col[c.columna])}${c.obra._fila}`, valor: c.valor });
+  await almacen.actualizarCeldas(P.mapa, celdas);
+  if (plan.nuevas.length) {
+    const filas = plan.nuevas.map((n) => COLUMNAS_INTERNO.map((c) => (c === 'ID' ? n.id : n.interno[c] ?? '')));
+    await almacen.escribirRango(`'${P.interno}'!A${Math.max(interno.length, 1) + 1}`, filas);
+  }
+  if (JSON.stringify(filasDeMemoria(plan.memoria)) !== JSON.stringify(filasDeMemoria(memoria))) await guardarMemoria(almacen, plan.memoria);
+  return { activo: true, listado, idsDeCarpeta: idsDeCarpetaBot(listado.carpetas, plan.vinculos), escribio: celdas.length > 0 };
+}
+
 // ---------------------------------------------------------------- fotos de Drive
-async function procesarFotosDrive(almacen, listado, obras, cacheFotos) {
+async function procesarFotosDrive(almacen, listado, obras, cacheFotos, bot = BOT_INACTIVO) {
   const idPorCarpeta = new Map(listado.carpetas.map((c) => [c.id, idDeCarpeta(c.nombre)]));
   const publicables = new Set(obras.filter((o) => o.publicar).map((o) => o.id));
   const porId = new Map();
-  for (const a of listado.archivos) {
-    const id = idPorCarpeta.get(a.carpetaId);
-    if (!id || !publicables.has(id) || esFotoPrivada(a.nombre) || !a.md5) continue;
-    if (!porId.has(id)) porId.set(id, []);
+  const vistas = new Map();   // la misma foto en dos lugares (carpeta del mapa y carpeta del bot) se publica una sola vez
+  const sumar = (id, a) => {
+    if (!id || !publicables.has(id) || esFotoPrivada(a.nombre) || esPiezaGrafica(a.nombre) || !a.md5) return;
+    if (!porId.has(id)) { porId.set(id, []); vistas.set(id, new Set()); }
+    if (vistas.get(id).has(a.md5) || porId.get(id).length >= 20) return;
+    vistas.get(id).add(a.md5);
     porId.get(id).push(a);
-  }
+  };
+  for (const a of listado.archivos) sumar(idPorCarpeta.get(a.carpetaId), a);
+  for (const a of bot.listado.archivos) for (const id of bot.idsDeCarpeta(a.carpetaId)) sumar(id, a);
   const fotos = new Map();
   const avisos = [];
   const trabajos = [];
@@ -189,20 +264,26 @@ export async function ejecutar({ almacen, modo, raiz = RAIZ, salida = path.join(
 
     // 1) Mantenimiento barato: ID a las filas nuevas y carpeta de fotos de cada una
     let mapa = await almacen.leerPestana(P.mapa);
+    const boton = esVerdadero((await almacen.leerRango(`'${P.avisos}'!B${FILA_PUBLICAR_AHORA}`))?.[0]?.[0]);
+    const completo = modo !== 'poll' || boton;
+    let interno = completo ? await almacen.leerPestana(P.interno) : [];
+    let bot = BOT_INACTIVO;
+    if (completo) {   // lo que archivó MIGUELITO (obras nuevas y fotos) entra antes de dar los IDs
+      bot = await importarBot(almacen, { mapa, interno, avisos });
+      if (bot.escribio) { mapa = await almacen.leerPestana(P.mapa); interno = await almacen.leerPestana(P.interno); }
+    }
     const nuevos = asignarIds(mapa);
     if (nuevos.length) {
       await almacen.actualizarCeldas(P.mapa, nuevos.map((n) => ({ a1: n.a1, valor: n.id })));
       for (const n of nuevos) { mapa[n.fila - 1] = mapa[n.fila - 1] ?? []; mapa[n.fila - 1][n.idx] = n.id; }
     }
     // 2) ¿Hay que publicar?
-    const boton = esVerdadero((await almacen.leerRango(`'${P.avisos}'!B${FILA_PUBLICAR_AHORA}`))?.[0]?.[0]);
     if (modo === 'poll' && !boton) {
       if (nuevos.length) await asegurarCarpetas(almacen, nuevos.map((n) => ({ id: n.id, nombre_club: n.nombre, referencia: n.referencia, ciudad: n.ciudad, deporte: n.deporte, provincia: n.provincia })), await almacen.listarFotos());
       return { publicar: false, motivo: nuevos.length ? 'ids-asignados' : 'nada-que-hacer' };
     }
 
     // 3) Leer todo
-    const interno = await almacen.leerPestana(P.interno);
     const { obras, avisos: avisosFilas } = leerObras(mapa, interno);
     avisos.push(...avisosFilas, ...aplicarNombres(obras));
     const listado = await almacen.listarFotos();
@@ -215,7 +296,7 @@ export async function ejecutar({ almacen, modo, raiz = RAIZ, salida = path.join(
     if (Object.keys(cache).length !== tamanoCache) await guardarGeo(almacen, cache);
 
     // 4) Fotos
-    const drive = await procesarFotosDrive(almacen, listado, obras, cacheFotos);
+    const drive = await procesarFotosDrive(almacen, listado, obras, cacheFotos, bot);
     avisos.push(...drive.avisos);
     const heredadas = await fotosHeredadas(raiz);
     const fotos = new Map(heredadas);
@@ -223,7 +304,7 @@ export async function ejecutar({ almacen, modo, raiz = RAIZ, salida = path.join(
 
     // 5) ¿Cambió algo desde la última publicación?
     const config = await fs.readFile(path.join(raiz, 'public', 'config.json'), 'utf8').catch(() => '');
-    const huellaActual = huella({ mapa: mapa.map((f) => f.slice(0, 20)), interno: interno.length, fotos: listado.archivos.map((a) => [a.id, a.md5, a.carpetaId, a.nombre]), carpetas: listado.carpetas.map((c) => idDeCarpeta(c.nombre)), config, sha });
+    const huellaActual = huella({ mapa: mapa.map((f) => f.slice(0, 20)), interno: interno.length, fotos: listado.archivos.map((a) => [a.id, a.md5, a.carpetaId, a.nombre]), bot: [bot.listado.archivos.map((a) => [a.id, a.md5, a.carpetaId, a.nombre]), bot.listado.datos.map((d) => [d.id, d.md5])], carpetas: listado.carpetas.map((c) => idDeCarpeta(c.nombre)), config, sha });
     if (modo === 'nocturno' && !boton && (await huellaPublicada()) === huellaActual) {
       return { publicar: false, motivo: 'sin-cambios' };
     }

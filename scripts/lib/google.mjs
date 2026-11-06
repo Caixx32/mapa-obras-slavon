@@ -52,12 +52,14 @@ export class ClienteGoogle {
 
 /** El Sheet «Mapa SLAVON» y la carpeta «Fotos Mapa SLAVON» se encuentran solos: son lo único compartido con la cuenta de servicio. */
 export class AlmacenGoogle {
-  constructor(cliente, { nombreHoja = 'Mapa SLAVON', nombreCarpeta = 'Fotos Mapa SLAVON' } = {}) {
+  constructor(cliente, { nombreHoja = 'Mapa SLAVON', nombreCarpeta = 'Fotos Mapa SLAVON', nombreBot = 'bot fotos' } = {}) {
     this.g = cliente;
     this.nombreHoja = nombreHoja;
     this.nombreCarpeta = nombreCarpeta;
+    this.nombreBot = nombreBot;
     this.hojaId = null;
     this.carpetaId = null;
+    this.botIds = [];
   }
 
   async #buscar(q, campos = 'files(id,name)') {
@@ -79,6 +81,8 @@ export class AlmacenGoogle {
     const carpetas = await this.#buscar(`name = '${this.nombreCarpeta}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`);
     if (!carpetas.length) throw new Error(`No encuentro la carpeta de Drive «${this.nombreCarpeta}». Compartila con el mail de la cuenta de servicio (como Editor).`);
     this.carpetaId = carpetas[0].id;
+    // La carpeta del bot de fotos es opcional: si todavía no se la compartieron al robot, simplemente no se lee.
+    this.botIds = (await this.#buscar(`name = '${this.nombreBot}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`)).map((f) => f.id);
     return this;
   }
 
@@ -119,6 +123,30 @@ export class AlmacenGoogle {
     const archivos = imagenes.filter((f) => ids.has(f.parents?.[0])).map((f) => ({ id: f.id, nombre: f.name, md5: f.md5Checksum ?? '', carpetaId: f.parents[0] }));
     return { carpetas, archivos };
   }
+  /**
+   * Lo que archiva el bot de fotos: todas las carpetas que cuelgan de «bot fotos», sus fotos y sus datos.txt.
+   * { activo, carpetas: [{id, nombre, padre, ruta}], archivos: [{id, nombre, md5, carpetaId}], datos: [{id, carpetaId, md5}] }
+   */
+  async listarBot() {
+    if (!this.botIds.length) return { activo: false, carpetas: [], archivos: [], datos: [] };
+    const todas = await this.#buscar("mimeType = 'application/vnd.google-apps.folder' and trashed = false", 'files(id,name,parents)');
+    const info = new Map(todas.map((f) => [f.id, { id: f.id, nombre: f.name, padre: f.parents?.[0] ?? '' }]));
+    const hijos = new Map();
+    for (const f of info.values()) { if (!hijos.has(f.padre)) hijos.set(f.padre, []); hijos.get(f.padre).push(f.id); }
+    const dentro = new Set();
+    const cola = [...this.botIds];
+    while (cola.length) { const id = cola.shift(); for (const h of hijos.get(id) ?? []) if (!dentro.has(h)) { dentro.add(h); cola.push(h); } }
+    const ruta = (id) => { const r = []; for (let a = id, n = 0; a && info.has(a) && !this.botIds.includes(a) && n < 10; a = info.get(a).padre, n++) r.unshift(info.get(a).nombre); return r; };
+    const carpetas = [...dentro].map((id) => ({ ...info.get(id), ruta: ruta(id) }));
+    const imagenes = await this.#buscar("mimeType contains 'image/' and trashed = false", 'files(id,name,md5Checksum,parents)');
+    const textos = await this.#buscar("name contains 'datos' and trashed = false", 'files(id,name,md5Checksum,parents,mimeType)');
+    return {
+      activo: true, carpetas,
+      archivos: imagenes.filter((f) => dentro.has(f.parents?.[0])).map((f) => ({ id: f.id, nombre: f.name, md5: f.md5Checksum ?? '', carpetaId: f.parents[0] })),
+      datos: textos.filter((f) => dentro.has(f.parents?.[0]) && /^datos(\.txt)*$/i.test(f.name) && f.mimeType !== 'application/vnd.google-apps.folder').map((f) => ({ id: f.id, carpetaId: f.parents[0], md5: f.md5Checksum ?? '' })),
+    };
+  }
+  async leerTexto(id) { return (await this.descargar(id)).toString('utf8'); }
   descargar(id) { return this.g.api(`${BASE_DRIVE()}/files/${id}?alt=media&supportsAllDrives=true`, { como: 'buffer' }); }
   async renombrarCarpeta(id, nombre) { await this.g.api(`${BASE_DRIVE()}/files/${id}?supportsAllDrives=true&fields=id`, { method: 'PATCH', json: { name: nombre } }); }
   async crearCarpeta(nombre) {

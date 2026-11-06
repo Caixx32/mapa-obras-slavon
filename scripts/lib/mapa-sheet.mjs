@@ -177,7 +177,7 @@ export const idDeCarpeta = (nombre) => { const m = String(nombre ?? '').match(/^
 export const esFotoPrivada = (nombreArchivo) => /privada/i.test(nombreArchivo);
 
 // ---------------------------------------------------------------- avisos y huella
-const ORDEN_AVISOS = ['ERROR', 'SIN UBICACIÓN', 'NOMBRE PARECE PERSONA', 'POSIBLE DUPLICADO', 'SIN FOTO', 'UBICACIÓN APROXIMADA', 'FOTO', 'AVISO'];
+const ORDEN_AVISOS = ['ERROR', 'SIN UBICACIÓN', 'NOMBRE PARECE PERSONA', 'POSIBLE DUPLICADO', 'NUEVA DEL BOT', 'SIN FOTO', 'UBICACIÓN APROXIMADA', 'FOTO', 'AVISO'];
 export function ordenarAvisos(avisos) {
   const peso = (t) => { const i = ORDEN_AVISOS.indexOf(t); return i === -1 ? ORDEN_AVISOS.length : i; };
   return [...avisos].sort((a, b) => peso(a.tipo) - peso(b.tipo) || String(a.id).localeCompare(String(b.id)));
