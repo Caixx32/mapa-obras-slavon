@@ -20,7 +20,30 @@ export class AlmacenMemoria {
     this.llamadas = [];
     this.solicitudes = [];
     this.n = 0;
+    this.bot = { activo: false, carpetas: [], archivos: [], datos: [] };   // la carpeta «bot fotos» (se arma en las pruebas)
   }
+  /** Prueba: carpeta del bot con su ruta (['Pádel','Cancha completa','Cliente - Localidad']) y su datos.txt. Devuelve el id de la carpeta. */
+  agregarCarpetaBot(ruta, textoDatos = null) {
+    this.bot.activo = true;
+    let padre = '';
+    ruta.forEach((nombre, i) => {
+      const ya = this.bot.carpetas.find((c) => c.nombre === nombre && c.padre === padre);
+      if (ya) { padre = ya.id; return; }
+      const c = { id: `bot${++this.n}`, nombre, padre, ruta: ruta.slice(0, i + 1) };
+      this.bot.carpetas.push(c);
+      padre = c.id;
+    });
+    if (textoDatos !== null) { const id = `datos${++this.n}`; this.bot.datos.push({ id, carpetaId: padre, md5: id }); this.contenidos.set(id, Buffer.from(textoDatos)); }
+    return padre;
+  }
+  agregarFotoBot(carpetaId, nombre, buffer) {
+    const id = this.agregarFoto(carpetaId, nombre, buffer);
+    const f = this.archivos.pop();
+    this.bot.archivos.push(f);
+    return id;
+  }
+  async listarBot() { return { activo: this.bot.activo, carpetas: [...this.bot.carpetas], archivos: [...this.bot.archivos], datos: [...this.bot.datos] }; }
+  async leerTexto(id) { return String(this.contenidos.get(id) ?? ''); }
   agregarFoto(carpetaId, nombre, buffer) {
     const id = `foto${++this.n}`;
     this.archivos.push({ id, nombre, md5: crypto.createHash('md5').update(buffer).digest('hex'), carpetaId });
