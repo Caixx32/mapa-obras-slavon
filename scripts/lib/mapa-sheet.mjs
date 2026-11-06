@@ -119,6 +119,7 @@ export function leerObras(mapa, interno = []) {
     const o = r.obra;
     o._link = String(f[col['Link de Google Maps']] ?? '').trim();
     o._nombre_celda = String(f[col['Nombre a mostrar']] ?? '').trim();
+    o._referencia = String(f[col['Nombre de referencia']] ?? '').trim();   // solo para ubicar al cliente en Drive: nunca se publica
     o._fila = nFila;
     obras.push(o);
   });
@@ -154,11 +155,24 @@ export function asignarIds(mapa) {
     const hayDatos = [col['Nombre del club'], col.Ciudad, col.Provincia, col.Deporte, col['Link de Google Maps']].some((c) => String(f[c] ?? '').trim() !== '');
     if (!hayDatos) return;
     max += 1;
-    nuevos.push({ fila: k + 2, id: pad4(max), idx: col.ID, a1: `${letraDeColumna(col.ID)}${k + 2}`, nombre: String(f[col['Nombre del club']] || f[col.Ciudad] || f[col.Provincia] || 'obra').trim() });
+    nuevos.push({
+      fila: k + 2, id: pad4(max), idx: col.ID, a1: `${letraDeColumna(col.ID)}${k + 2}`,
+      nombre: String(f[col['Nombre del club']] || f[col.Ciudad] || f[col.Provincia] || 'obra').trim(),
+      referencia: String(f[col['Nombre de referencia']] ?? '').trim(), ciudad: String(f[col.Ciudad] ?? '').trim(),
+      deporte: idDeEtiqueta(f[col.Deporte]), provincia: String(f[col.Provincia] ?? '').trim(),
+    });
   });
   return nuevos;
 }
-export const nombreCarpeta = (id, nombre) => `${id} - ${String(nombre ?? '').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() || 'obra'}`.slice(0, 120);
+const limpiarParteCarpeta = (t, max) => String(t ?? '').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+/** «0217 - Eduardo Quinodoz - Hurlingham»: el ID siempre va primero (así el robot encuentra la carpeta). */
+export const nombreCarpeta = (id, ...partes) => `${id} - ${partes.map((p, i) => limpiarParteCarpeta(p, i === 0 ? 80 : 30)).filter(Boolean).join(' - ') || 'obra'}`.slice(0, 120);
+/** Nombre que tiene que tener la carpeta de fotos de una obra: ID - nombre de referencia (o el del club) - ciudad. */
+export const nombreCarpetaObra = (o) => {
+  const base = o._referencia || o.referencia || o.nombre_club || o.ciudad || [DEPORTE_ETIQUETA[o.deporte], o.provincia].filter(Boolean).join(' ');
+  const ciudad = o.ciudad && !norm(base).includes(norm(o.ciudad)) ? o.ciudad : '';
+  return nombreCarpeta(o.id, base, ciudad);
+};
 export const idDeCarpeta = (nombre) => { const m = String(nombre ?? '').match(/^\s*(\d{1,6})\b/); return m ? pad4(m[1]) : ''; };
 export const esFotoPrivada = (nombreArchivo) => /privada/i.test(nombreArchivo);
 

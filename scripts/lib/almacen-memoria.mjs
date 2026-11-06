@@ -68,5 +68,10 @@ export class AlmacenMemoria {
   }
   async listarFotos() { return { carpetas: [...this.carpetas], archivos: [...this.archivos] }; }
   async descargar(id) { return this.contenidos.get(id); }
+  async renombrarCarpeta(id, nombre) {
+    if (this.fallarRenombrado) throw new Error('simulado');
+    const c = this.carpetas.find((x) => x.id === id);
+    if (c) c.nombre = nombre;
+  }
   async crearCarpeta(nombre) { const c = { id: `carpeta${++this.n}`, nombre }; this.carpetas.push(c); return c; }
 }

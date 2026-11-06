@@ -120,6 +120,7 @@ export class AlmacenGoogle {
     return { carpetas, archivos };
   }
   descargar(id) { return this.g.api(`${BASE_DRIVE()}/files/${id}?alt=media&supportsAllDrives=true`, { como: 'buffer' }); }
+  async renombrarCarpeta(id, nombre) { await this.g.api(`${BASE_DRIVE()}/files/${id}?supportsAllDrives=true&fields=id`, { method: 'PATCH', json: { name: nombre } }); }
   async crearCarpeta(nombre) {
     const j = await this.g.api(`${BASE_DRIVE()}/files?supportsAllDrives=true&fields=id,name`, { method: 'POST', json: { name: nombre, mimeType: 'application/vnd.google-apps.folder', parents: [this.carpetaId] } });
     return { id: j.id, nombre: j.name };

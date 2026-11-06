@@ -7,7 +7,7 @@ import sharp from 'sharp';
 import { AlmacenMemoria } from './lib/almacen-memoria.mjs';
 import { ejecutar, avisarErrorDespliegue } from './lib/publicador.mjs';
 import { prepararSheet, FORMULA_NOMBRE_A_MOSTRAR, TEXTO_MANUAL, MARCA, MARCA_ANTERIOR, MARCA_V1 } from './lib/preparar-sheet.mjs';
-import { COLUMNAS, COLUMNAS_V1, COLUMNAS_INTERNO, extraerCoordenadas, expandirLinkCorto, asignarIds, nombreCarpeta, idDeCarpeta, esFotoPrivada, leerObras } from './lib/mapa-sheet.mjs';
+import { COLUMNAS, COLUMNAS_V1, COLUMNAS_INTERNO, extraerCoordenadas, expandirLinkCorto, asignarIds, nombreCarpeta, nombreCarpetaObra, idDeCarpeta, esFotoPrivada, leerObras } from './lib/mapa-sheet.mjs';
 
 const fila = ({ id = '', club = '', mostrar = '', ref = '', deporte = 'Fútbol', tipo = '', canchas = 1, ciudad = '', prov = '', pais = 'Argentina', anio = '', estado = 'Terminada', link = '', nombrar = false, dest = false, pub = true, notas = '' } = {}) =>
   [id, club, mostrar, ref, deporte, tipo, canchas, ciudad, prov, pais, anio, estado, link, nombrar, dest, pub, notas];
@@ -85,7 +85,7 @@ test('agregar una obra, publicarla con «Publicar ahora» y borrarla', async () 
   const a = await ejecutar({ ...comun, modo: 'poll' });
   assert.deepEqual([a.publicar, a.motivo], [false, 'ids-asignados']);
   assert.equal(almacen.tabs.MAPA[6][0], '0006');
-  assert.ok(almacen.carpetas.some((c) => c.nombre === '0006 - Club Nuevo de Prueba'));
+  assert.ok(almacen.carpetas.some((c) => c.nombre === '0006 - Club Nuevo de Prueba - Rosario'));
   await assert.rejects(fs.access(path.join(comun.salida, 'data')), 'todavía no se armó nada');
   // 2) tildar «Publicar ahora»
   almacen.tabs.AVISOS[4][1] = true;
@@ -241,4 +241,47 @@ test('un Sheet con la versión 1 recibe las dos reparaciones (fórmula y columna
   assert.equal(await prepararSheet(a), true);
   assert.equal(a.tabs.MAPA[0][3], 'Nombre de referencia');
   assert.ok(a.solicitudes.some((r) => r.updateSpreadsheetProperties?.properties?.locale === 'en_US'));
+});
+
+test('carpetas de Drive: «ID - referencia - ciudad», se renombran las que ya existen y nunca se publica la referencia', async () => {
+  assert.equal(nombreCarpeta('0011', 'Club: "Los/Pinos"'), '0011 - Club Los Pinos');
+  assert.equal(nombreCarpeta('0011', 'Eduardo Quinodoz', 'Hurlingham'), '0011 - Eduardo Quinodoz - Hurlingham');
+  assert.equal(nombreCarpetaObra({ id: '0217', _referencia: 'Eduardo Quinodoz', nombre_club: 'Complejo Villegas', ciudad: 'Hurlingham' }), '0217 - Eduardo Quinodoz - Hurlingham');
+  assert.equal(nombreCarpetaObra({ id: '0218', nombre_club: 'Complejo Villegas', ciudad: 'Hurlingham' }), '0218 - Complejo Villegas - Hurlingham', 'sin referencia usa el nombre del club');
+  assert.equal(nombreCarpetaObra({ id: '0219', _referencia: 'Obra Escobar centro', ciudad: 'Escobar' }), '0219 - Obra Escobar centro', 'no repite la ciudad si ya está en el nombre');
+  assert.equal(nombreCarpetaObra({ id: '0220', deporte: 'padel', provincia: 'Córdoba' }), '0220 - Pádel Córdoba');
+  assert.ok(nombreCarpetaObra({ id: '0221', _referencia: 'x'.repeat(300), ciudad: 'Rosario' }).length <= 120);
+
+  const tabs = BASE();
+  tabs.MAPA[1][3] = 'Cliente Pedro Pascual';                         // referencia de la obra 0001
+  tabs.MAPA.push(fila({ club: 'Club Nuevo', ref: 'Obra Escobar', ciudad: 'Rosario', prov: 'Santa Fe', link: '-32.95, -60.64' }));
+  const { almacen, comun, publicado } = await entorno(tabs);
+  almacen.carpetas.push({ id: 'c1', nombre: '0001 - Club Los Pinos' }, { id: 'c9', nombre: '9999 - Carpeta de otra cosa' }, { id: 'c0', nombre: 'Fotos varias' });
+  // una fila nueva: la carpeta se crea con la referencia
+  await ejecutar({ ...comun, modo: 'poll' });
+  assert.ok(almacen.carpetas.some((c) => c.nombre === '0006 - Obra Escobar - Rosario'));
+  assert.equal(almacen.carpetas.find((c) => c.id === 'c1').nombre, '0001 - Club Los Pinos', 'el programa de cada 5 minutos no renombra');
+  // publicación completa: renombra las que ya existían, sin tocar las que no son de ninguna obra
+  await ejecutar({ ...comun, modo: 'manual' });
+  assert.equal(almacen.carpetas.find((c) => c.id === 'c1').nombre, '0001 - Cliente Pedro Pascual - Villa Allende');
+  assert.equal(almacen.carpetas.find((c) => c.id === 'c9').nombre, '9999 - Carpeta de otra cosa');
+  assert.equal(almacen.carpetas.find((c) => c.id === 'c0').nombre, 'Fotos varias');
+  assert.match(almacen.tabs.AVISOS.slice(9).find((f) => f?.[0] === 'SIN FOTO' && f[1] === '0001')[2], /0001 - Cliente Pedro Pascual - Villa Allende/);
+  const texto = JSON.stringify(await publicado());
+  for (const secreto of ['Pedro Pascual', 'Obra Escobar']) assert.ok(!texto.includes(secreto), `la referencia «${secreto}» no se publica`);
+  // si ya tienen el nombre correcto no se vuelve a pedir nada
+  const nombres = almacen.carpetas.map((c) => c.nombre);
+  almacen.renombrarCarpeta = async () => { throw new Error('no debería renombrar de nuevo'); };
+  await ejecutar({ ...comun, modo: 'manual' });
+  assert.deepEqual(almacen.carpetas.map((c) => c.nombre), nombres);
+});
+
+test('si Drive no deja renombrar, la publicación sigue y queda un aviso sin nombres', async () => {
+  const { almacen, comun, publicado, avisos } = await entorno(BASE());
+  almacen.carpetas.push({ id: 'c1', nombre: '0001 - Club Los Pinos' });
+  almacen.fallarRenombrado = true;
+  const r = await ejecutar({ ...comun, modo: 'manual' });
+  assert.equal(r.publicar, true);
+  assert.equal((await publicado()).obras.length, 4);
+  assert.ok(avisos().some((f) => f[0] === 'AVISO' && /No pude renombrar 1 carpeta/.test(f[2])));
 });

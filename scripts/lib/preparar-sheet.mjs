@@ -28,7 +28,7 @@ export const TEXTO_MANUAL = [
   ['2. Ubicación: pegá el link de Google Maps (o las coordenadas, "-34.60, -58.38") en «Link de Google Maps». Sin link se ubica por ciudad y provincia (aproximado).'],
   ['3. Nombre: tildá «¿Se puede nombrar?» solo si es un club, colegio, estadio, empresa… y autorizó. Una persona física NUNCA. Si no, sale «Complejo de…».'],
   ['4. Tildá «¿Publicar?» para que la obra salga en el mapa y «¿Destacada?» para la grilla de destacadas. Para sacarla, destildá «¿Publicar?».'],
-  ['5. Fotos: arrastralas a la subcarpeta «ID - Nombre» (Drive, desde la PC o el celular). Si el nombre del archivo dice «privada», no se publica.'],
+  ['5. Fotos: arrastralas a la subcarpeta «ID - nombre de referencia - ciudad» (Drive, desde la PC o el celular). El robot le pone ese nombre solo. Si el nombre del archivo dice «privada», no se publica.'],
   ['6. Publicar ya: tildá «Publicar ahora» en AVISOS (también desde el celular). Tarda 5 a 10 minutos y se destilda sola. Si no, se publica sola cada noche a las 3 AM.'],
   ['7. Mirá AVISOS: dice si salió bien y qué falta (sin ubicar, sin foto, duplicados, nombres que parecen de una persona).'],
   ['8. No cambies «ID» ni «Nombre a mostrar» (se completan solas). «Nombre de referencia» y «Notas internas» son solo para uso interno: nunca se publican. Datos de clientes: en INTERNO.'],
