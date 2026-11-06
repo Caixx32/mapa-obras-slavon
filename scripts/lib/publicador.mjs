@@ -11,7 +11,7 @@ import { agruparDuplicados } from './fusiones.mjs';
 import { versionarCarpeta } from '../versionar.mjs';
 import { prepararSheet, LIMITE_FILAS } from './preparar-sheet.mjs';
 import {
-  DEPORTE_ETIQUETA, PESTANAS, FILA_PUBLICAR_AHORA, FILA_ENCABEZADO_AVISOS, esVerdadero, leerObras, aplicarNombres, asignarIds, nombreCarpeta, idDeCarpeta, esFotoPrivada,
+  DEPORTE_ETIQUETA, PESTANAS, FILA_PUBLICAR_AHORA, FILA_ENCABEZADO_AVISOS, esVerdadero, leerObras, aplicarNombres, asignarIds, nombreCarpetaObra, idDeCarpeta, esFotoPrivada,
   extraerCoordenadas, esLinkCorto, expandirLinkCorto, ordenarAvisos, huella, fechaLocal,
 } from './mapa-sheet.mjs';
 
@@ -25,14 +25,28 @@ async function enParalelo(items, n, fn) {
 const existe = (p) => fs.access(p).then(() => true, () => false);
 
 // ---------------------------------------------------------------- carpetas de fotos
-async function asegurarCarpetas(almacen, obras, listado) {
+/**
+ * Crea la carpeta de las obras que no tienen y, con `renombrar`, deja todas con el nombre «ID - referencia - ciudad»
+ * (así se reconoce al cliente en Drive). Nunca se imprime un nombre: solo cantidades.
+ */
+async function asegurarCarpetas(almacen, obras, listado, { renombrar = false, limiteMs = 12 * 60_000 } = {}) {
   const conCarpeta = new Set(listado.carpetas.map((c) => idDeCarpeta(c.nombre)).filter(Boolean));
   const faltan = obras.filter((o) => !conCarpeta.has(o.id));
   await enParalelo(faltan, 3, async (o) => {
-    const c = await almacen.crearCarpeta(nombreCarpeta(o.id, o.nombre_club || o.ciudad || [DEPORTE_ETIQUETA[o.deporte], o.provincia].filter(Boolean).join(' ')));
+    const c = await almacen.crearCarpeta(nombreCarpetaObra(o));
     listado.carpetas.push(c);
   });
-  return faltan.length;
+  const resumen = { creadas: faltan.length, renombradas: 0, fallidas: 0, pendientes: 0 };
+  if (renombrar) {
+    const porId = new Map(obras.map((o) => [o.id, o]));
+    const cambios = listado.carpetas.map((c) => ({ c, nuevo: porId.has(idDeCarpeta(c.nombre)) ? nombreCarpetaObra(porId.get(idDeCarpeta(c.nombre))) : null })).filter((x) => x.nuevo && x.nuevo !== x.c.nombre);
+    const tope = Date.now() + limiteMs;
+    await enParalelo(cambios, 3, async ({ c, nuevo }) => {
+      if (Date.now() > tope) { resumen.pendientes++; return; }
+      try { await almacen.renombrarCarpeta(c.id, nuevo); c.nombre = nuevo; resumen.renombradas++; } catch { resumen.fallidas++; }
+    });
+  }
+  return resumen;
 }
 
 // ---------------------------------------------------------------- ubicaciones (link de Google Maps → coordenadas; si no, ciudad + provincia)
@@ -183,7 +197,7 @@ export async function ejecutar({ almacen, modo, raiz = RAIZ, salida = path.join(
     // 2) ¿Hay que publicar?
     const boton = esVerdadero((await almacen.leerRango(`'${P.avisos}'!B${FILA_PUBLICAR_AHORA}`))?.[0]?.[0]);
     if (modo === 'poll' && !boton) {
-      if (nuevos.length) await asegurarCarpetas(almacen, nuevos.map((n) => ({ id: n.id, nombre_club: n.nombre })), await almacen.listarFotos());
+      if (nuevos.length) await asegurarCarpetas(almacen, nuevos.map((n) => ({ id: n.id, nombre_club: n.nombre, referencia: n.referencia, ciudad: n.ciudad, deporte: n.deporte, provincia: n.provincia })), await almacen.listarFotos());
       return { publicar: false, motivo: nuevos.length ? 'ids-asignados' : 'nada-que-hacer' };
     }
 
@@ -192,7 +206,9 @@ export async function ejecutar({ almacen, modo, raiz = RAIZ, salida = path.join(
     const { obras, avisos: avisosFilas } = leerObras(mapa, interno);
     avisos.push(...avisosFilas, ...aplicarNombres(obras));
     const listado = await almacen.listarFotos();
-    await asegurarCarpetas(almacen, obras, listado);
+    const carpetas = await asegurarCarpetas(almacen, obras, listado, { renombrar: true });
+    if (carpetas.fallidas) avisos.push({ tipo: 'AVISO', id: '', texto: `No pude renombrar ${carpetas.fallidas} carpeta(s) de Drive; se reintenta en la próxima publicación.` });
+    if (carpetas.pendientes) avisos.push({ tipo: 'AVISO', id: '', texto: `Faltan renombrar ${carpetas.pendientes} carpetas de Drive; se siguen renombrando en la próxima publicación.` });
     const cache = await leerGeo(almacen);
     const tamanoCache = Object.keys(cache).length;
     avisos.push(...(await resolverUbicaciones(obras, cache, { fetchFn, opcionesGeo })));
@@ -207,7 +223,7 @@ export async function ejecutar({ almacen, modo, raiz = RAIZ, salida = path.join(
 
     // 5) ¿Cambió algo desde la última publicación?
     const config = await fs.readFile(path.join(raiz, 'public', 'config.json'), 'utf8').catch(() => '');
-    const huellaActual = huella({ mapa: mapa.map((f) => f.slice(0, 20)), interno: interno.length, fotos: listado.archivos.map((a) => [a.id, a.md5, a.carpetaId, a.nombre]), carpetas: listado.carpetas.map((c) => c.nombre), config, sha });
+    const huellaActual = huella({ mapa: mapa.map((f) => f.slice(0, 20)), interno: interno.length, fotos: listado.archivos.map((a) => [a.id, a.md5, a.carpetaId, a.nombre]), carpetas: listado.carpetas.map((c) => idDeCarpeta(c.nombre)), config, sha });
     if (modo === 'nocturno' && !boton && (await huellaPublicada()) === huellaActual) {
       return { publicar: false, motivo: 'sin-cambios' };
     }
@@ -231,7 +247,7 @@ export async function ejecutar({ almacen, modo, raiz = RAIZ, salida = path.join(
     const conFoto = (o) => (fotos.get(o.id) ?? []).length > 0;
     const peso = (o) => (o.destacada ? 0 : o.nombrable ? 1 : 2);
     for (const o of publicables.filter((x) => !conFoto(x)).sort((a, b) => peso(a) - peso(b) || a.id.localeCompare(b.id))) {
-      avisos.push({ tipo: 'SIN FOTO', id: o.id, texto: `${o.destacada ? 'DESTACADA. ' : ''}Arrastrá fotos a la carpeta «${nombreCarpeta(o.id, o.nombre_club || o.ciudad)}» en Drive.` });
+      avisos.push({ tipo: 'SIN FOTO', id: o.id, texto: `${o.destacada ? 'DESTACADA. ' : ''}Arrastrá fotos a la carpeta «${nombreCarpetaObra(o)}» en Drive.` });
     }
     const enMapa = json.obras.filter((o) => o.lat !== null).length;
     await escribirAvisos(almacen, { resultado: `OK: publicado (${json.obras.length} obras, ${enMapa} en el mapa)`, cuantasEnMapa: `${enMapa} de ${json.obras.length} obras publicadas`, avisos, resetearBoton: true });
