@@ -126,7 +126,7 @@ const png = (color) => sharp({ create: { width: 40, height: 30, channels: 3, bac
 
 test('MIGUELITO archiva → el robot carga la obra, la emparejan las que ya existen, las fotos entran solas y nada se publica incompleto', async () => {
   const { almacen, comun, publicado, avisos, filasMapa } = await entorno();
-  // 1) una obra completa y nueva (con fotos buenas, una privada, una pieza gráfica y una que ya estaba en la carpeta del mapa)
+  // 1) una obra completa y nueva. Sus fotos están en la carpeta del bot (no salen) y una copia en la carpeta del mapa (esa sí)
   const villaverde = almacen.agregarCarpetaBot(['Pádel', 'Cancha completa', 'Federico Villaverde - Ituzaingó'], VILLAVERDE);
   const f1 = await png('#ff0000'), f2 = await png('#00ff00');
   almacen.agregarFotoBot(villaverde, 'WhatsApp Image 1.jpeg', f1);
@@ -167,9 +167,9 @@ test('MIGUELITO archiva → el robot carga la obra, la emparejan las que ya exis
   const v = pub.find((o) => o.id === '0002');
   assert.equal(v.nombrable, false);
   assert.match(v.nombre_club, /^Complejo de pádel – Ituzaingó, Buenos Aires$/);
-  assert.equal(v.fotos.length, 2, 'foto 1 (la repetida vale una vez) + foto 3');
+  assert.equal(v.fotos.length, 1, 'solo la que el bot copió a la carpeta del mapa: las fotos de SU carpeta no salen solas');
   assert.ok(!pub.some((o) => o.id === '0003'), 'la obra incompleta no sale');
-  assert.equal(pub.find((o) => o.id === '0001').fotos.length, 1, 'la foto de la carpeta del bot va a la obra que ya existía');
+  assert.equal((pub.find((o) => o.id === '0001').fotos ?? []).length, 0, 'las fotos de la carpeta del bot no se publican sin pasar por la carpeta de la obra');
   const texto = JSON.stringify(await publicado());
   for (const secreto of ['Villaverde', 'Perón', 'Peak', 'Quintana']) assert.ok(!texto.includes(secreto), secreto);
   const lista = avisos();

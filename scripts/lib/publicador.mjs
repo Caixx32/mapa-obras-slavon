@@ -95,6 +95,7 @@ async function resolverUbicaciones(obras, cache, { fetchFn, opcionesGeo }) {
 }
 
 // ---------------------------------------------------------------- carpeta del bot de fotos (MIGUELITO)
+const PUBLICAR_FOTOS_DEL_BOT = false;   // ver procesarFotosDrive
 const BOT_INACTIVO = { activo: false, listado: { carpetas: [], archivos: [], datos: [] }, idsDeCarpeta: () => [], escribio: false };
 
 async function guardarMemoria(almacen, mem) {
@@ -178,7 +179,9 @@ async function procesarFotosDrive(almacen, listado, obras, cacheFotos, bot = BOT
     porId.get(id).push(a);
   };
   for (const a of listado.archivos) sumar(idPorCarpeta.get(a.carpetaId), a);
-  for (const a of bot.listado.archivos) for (const id of bot.idsDeCarpeta(a.carpetaId)) sumar(id, a);
+  // Las fotos que el bot guarda en SU carpeta son todo lo que llegó al grupo (personas, documentos…): no se publican solas.
+  // Solo salen las que el bot copia a la carpeta de la obra en «Fotos Mapa SLAVON», donde decide qué es público y marca «_privada» el resto.
+  if (PUBLICAR_FOTOS_DEL_BOT) for (const a of bot.listado.archivos) for (const id of bot.idsDeCarpeta(a.carpetaId)) sumar(id, a);
   const fotos = new Map();
   const avisos = [];
   const trabajos = [];
